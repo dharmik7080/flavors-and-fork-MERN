@@ -125,8 +125,7 @@ router.post('/', async (req, res) => {
       const info = await transporter.sendMail(mailOptions);
       console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
     } catch (mailError) {
-      console.error('❌ NODEMAILER FAILURE DETAILS:');
-      console.error(mailError);
+      console.error("❌ NODEMAILER FAILURE DETAILS:", mailError.message);
     }
 
     // Set a cookie to remember the customer's last reserved table (24 hours expiration, readable by frontend JS)

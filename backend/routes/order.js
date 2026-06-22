@@ -95,26 +95,31 @@ router.post('/checkout', async (req, res) => {
       </html>
     `;
 
-    // Send the email message
-    let info = await transporter.sendMail({
-      from: '"Flavors & Fork" <orders@flavorsandfork.com>',
-      to: email,
-      subject: 'Flavors & Fork - Order Confirmation Invoice 🧾',
-      html: htmlContent
-    });
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
+    // Send the email message inside a local try-catch block to prevent network crashes from halting checkout
+    let info = null;
+    let previewUrl = '';
+    try {
+      info = await transporter.sendMail({
+        from: '"Flavors & Fork" <orders@flavorsandfork.com>',
+        to: email,
+        subject: 'Flavors & Fork - Order Confirmation Invoice 🧾',
+        html: htmlContent
+      });
+      previewUrl = nodemailer.getTestMessageUrl(info);
+      console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
+    } catch (emailError) {
+      console.error("❌ NODEMAILER FAILURE DETAILS:", emailError.message);
+    }
 
     res.status(200).json({
       status: 'success',
       message: 'Order completed and checkout confirmation invoice sent successfully.',
-      messageId: info.messageId,
+      messageId: info ? info.messageId : null,
       previewUrl: previewUrl
     });
   } catch (error) {
-    console.error('SMTP Mail dispatch error:', error.message);
-    res.status(500).json({ error: 'Order checkout processing failed during email invoice generation.' });
+    console.error('Checkout processing error:', error.message);
+    res.status(500).json({ error: 'Order checkout processing failed.' });
   }
 });
 
