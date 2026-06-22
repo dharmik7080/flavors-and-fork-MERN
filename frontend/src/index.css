@@ -1,0 +1,358 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700;900&display=swap');
+
+/* CSS Variables for Light/Dark Theme */
+:root {
+  --bg-color: #f8f9fa;
+  --text-color: #212529;
+  --card-bg: #ffffff;
+  --navbar-bg: #343a40;
+  --gold-color: #d4af37;
+  --gold-hover: #b4941f;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --font-family: 'Lato', sans-serif;
+}
+
+body.dark-mode {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --card-bg: #1e1e1e;
+  --navbar-bg: #000000;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+  font-family: var(--font-family);
+  padding-bottom: 70px; /* Space for the bottom cart bar */
+}
+
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.text-gold {
+  color: var(--gold-color) !important;
+}
+
+/* App Layout Wrapper */
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+/* Card Styling overrides */
+.card {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--border-color) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+.card-title,
+.card-text {
+  color: var(--text-color) !important;
+}
+
+body.dark-mode .text-muted {
+  color: #aeaeae !important;
+}
+
+/* Gold Theme Components */
+.btn-outline-gold {
+  color: var(--gold-color);
+  border-color: var(--gold-color);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-gold:hover {
+  background-color: var(--gold-color);
+  color: #000;
+  border-color: var(--gold-color);
+}
+
+.badge-gold {
+  background-color: var(--gold-color);
+  color: #000;
+  font-weight: 700;
+}
+
+/* Table Selection Styles */
+.table-box {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+body.dark-mode .table-box {
+  border-color: #444;
+  background-color: #2c2c2c;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .table-box:hover {
+  background-color: #3a3a3a;
+}
+
+.table-box:hover {
+  background-color: #f8f9fa;
+  border-color: #aaa;
+}
+
+.table-box.selected {
+  background-color: #28a745 !important;
+  color: white !important;
+  border-color: #28a745 !important;
+}
+
+.table-box.booked {
+  background-color: #dc3545 !important;
+  color: white !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.7;
+  border-color: #dc3545 !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+/* Placeholders & Visual details */
+.placeholder-box {
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background-size: cover;
+  background-position: center;
+}
+
+.placeholder-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  padding: 10px;
+  text-align: center;
+}
+
+.contact-details p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.contact-details i {
+  color: var(--gold-color);
+  margin-right: 10px;
+}
+
+.contact-box {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 15px;
+  transition: all 0.3s ease-in-out;
+}
+
+.contact-box:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 193, 7, 0.3);
+  transform: translateX(5px);
+}
+
+.emoji-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 15px auto;
+  font-size: 2rem;
+  background-color: transparent;
+  transition: all 0.3s ease-in-out;
+}
+
+.card:hover .emoji-circle {
+  border-color: var(--gold-color);
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+/* Search and Promos */
+.search-pill {
+  border-radius: 50px;
+  background-color: #121212;
+  border: 2px solid var(--gold-color, #d4af37);
+  overflow: hidden;
+  padding: 0;
+  transition: box-shadow 0.3s ease;
+}
+
+.search-pill .form-control {
+  background-color: transparent !important;
+  border: none;
+  color: white !important;
+  padding-left: 20px;
+}
+
+.search-pill .input-group-text {
+  background-color: transparent;
+  border: none;
+  color: var(--gold-color, #d4af37);
+  padding-right: 15px;
+}
+
+.search-pill:focus-within {
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.search-pill .form-control:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.promo-group {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.custom-gold-input {
+  color: var(--gold-color, #ffc107) !important;
+}
+
+input#promoCodeInput {
+  color: var(--gold-color, #ffc107) !important;
+  background-color: #212529 !important;
+}
+
+.promo-group:focus-within {
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4) !important;
+}
+
+.promo-btn {
+  background-color: var(--gold-color, #d4af37) !important;
+  border-color: var(--gold-color, #d4af37) !important;
+  color: #000 !important;
+}
+
+.bill-receipt-card {
+  background: #212529;
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  margin-top: 20px;
+}
+
+.btn-checkout {
+  background: #ffc107;
+  color: #000;
+  font-weight: 800;
+  font-size: 1.2rem;
+  padding: 15px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+/* Skeleton loader shimmers */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-box {
+  background: #222;
+  background-image: linear-gradient(90deg, #222 0px, #333 40px, #222 80px);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Transitions helper classes */
+.opacity-0 {
+  opacity: 0;
+}
+.opacity-100 {
+  opacity: 1;
+}
+.visible {
+  visibility: visible;
+}
+.invisible {
+  visibility: hidden;
+}
+.duration-1000 {
+  transition-duration: 1000ms;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-card {
+  background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.shimmer-element {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.btn-outline-red-custom {
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-red-custom:hover {
+  background-color: #dc2626; /* red-600 */
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
