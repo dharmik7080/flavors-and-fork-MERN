@@ -10,6 +10,20 @@ function Navbar({ isDarkMode, toggleTheme }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Shop Status logic (Open 11:00 AM - 11:00 PM)
   const [isOpenNow, setIsOpenNow] = useState(false);
 
@@ -25,8 +39,8 @@ function Navbar({ isDarkMode, toggleTheme }) {
   }, []);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div className="container-fluid">
+    <nav className={`navbar navbar-expand-lg navbar-dark navbar-sticky ${isScrolled ? 'scrolled-navbar' : 'top-navbar'}`}>
+      <div className="container">
         <Link className="navbar-brand font-serif" to="/">Flavors & Fork</Link>
         <button 
           className="navbar-toggler" 
@@ -60,6 +74,9 @@ function Navbar({ isDarkMode, toggleTheme }) {
                 </li>
                 <li className="nav-item">
                   <Link className={`nav-link ${location.pathname === '/admin/reservations' ? 'active' : ''}`} to="/admin/reservations">Reservations</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link ${location.pathname === '/admin/orders' ? 'active' : ''}`} to="/admin/orders">Kitchen Orders</Link>
                 </li>
               </>
             )}

@@ -120,12 +120,13 @@ router.post('/', async (req, res) => {
       `
     };
 
-    // Send the email live asynchronously and log status cleanly in the console
-    transporter.sendMail(mailOptions).then(info => {
+    // Send the email live and log status cleanly in the console
+    try {
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
-    }).catch(mailError => {
+    } catch (mailError) {
       console.error("❌ NODEMAILER FAILURE DETAILS:", mailError.message);
-    });
+    }
 
     // Set a cookie to remember the customer's last reserved table (24 hours expiration, readable by frontend JS)
     res.cookie('last_booked_table', NewReservation.tableId, { 

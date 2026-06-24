@@ -1,21 +1,12 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
 import Dish from '../models/Dish.js';
+import Order from '../models/Order.js';
 
 const router = express.Router();
 
-// POST /api/orders/checkout - Handle order checkouts and send confirmation email invoice
-router.post('/checkout', async (req, res) => {
-  const { email, items, grandTotal } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Customer email address is required.' });
-  }
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: 'Cart items list must be provided to checkout.' });
-  }
-
+// Helper to send order email asynchronously in the background
+async function sendOrderEmail(email, items, grandTotal) {
   try {
     // Generate a temporary Ethereal test account dynamically for sandbox development testing
     let testAccount = await nodemailer.createTestAccount();
@@ -35,9 +26,9 @@ router.post('/checkout', async (req, res) => {
     const tableRows = items.map(item => `
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: left; color: #212529;">${item.name}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: center; color: #212529;">${item.qty}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: center; color: #212529;">${item.qty || item.quantity || 1}</td>
         <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: right; color: #212529;">₹${item.price}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: right; color: #212529; font-weight: bold;">₹${item.price * item.qty}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #dee2e6; text-align: right; color: #212529; font-weight: bold;">₹${item.price * (item.qty || item.quantity || 1)}</td>
       </tr>
     `).join('');
 
@@ -95,25 +86,49 @@ router.post('/checkout', async (req, res) => {
       </html>
     `;
 
-    // Send the email message asynchronously in the background to prevent network timeouts from halting checkout
-    transporter.sendMail({
+    const info = await transporter.sendMail({
       from: '"Flavors & Fork" <orders@flavorsandfork.com>',
       to: email,
       subject: 'Flavors & Fork - Order Confirmation Invoice 🧾',
       html: htmlContent
-    }).then(info => {
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
-    }).catch(emailError => {
-      console.error("❌ NODEMAILER FAILURE DETAILS:", emailError.message);
+    });
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
+  } catch (emailError) {
+    console.error("❌ NODEMAILER FAILURE DETAILS:", emailError.message);
+  }
+}
+
+// POST /api/orders/checkout - Handle order checkouts and send confirmation email invoice
+router.post('/checkout', async (req, res) => {
+  const { email, items, grandTotal } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Customer email address is required.' });
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Cart items list must be provided to checkout.' });
+  }
+
+  try {
+    // Save order details to MongoDB database
+    const newOrder = await Order.create({
+      email,
+      items: items.map(item => ({
+        name: item.name,
+        qty: item.qty || item.quantity || 1,
+        price: item.price
+      })),
+      grandTotal,
+      tableNo: req.body.tableNo || 'N/A',
+      status: 'Pending'
     });
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Order completed and checkout confirmation invoice sent successfully.',
-      messageId: null,
-      previewUrl: ''
-    });
+    // Fire email notifications in background asynchronously
+    sendOrderEmail(email, items, grandTotal);
+
+    return res.status(201).json({ success: true, message: "Order placed successfully!", order: newOrder });
   } catch (error) {
     console.error('Checkout processing error:', error.message);
     res.status(500).json({ error: 'Order checkout processing failed.' });
@@ -148,6 +163,42 @@ router.get('/analytics', async (req, res) => {
   } catch (error) {
     console.error("Analytics Aggregation Database Error:", error);
     res.status(503).json({ success: false, error: "Database offline", fallbackData: [] });
+  }
+});
+
+// GET /api/orders - Fetch all active orders (status is not 'Served' or 'Cancelled')
+router.get('/', async (req, res) => {
+  try {
+    const orders = await Order.find({
+      status: { $nin: ['Served', 'Cancelled'] }
+    }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching kitchen orders:', error.message);
+    res.status(500).json({ error: 'Failed to fetch active kitchen orders.' });
+  }
+});
+
+// PATCH /api/orders/:id/status - Update order status
+router.patch('/:id/status', async (req, res) => {
+  const { status } = req.body;
+  if (!['Pending', 'Preparing', 'Served', 'Cancelled'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid order status value.' });
+  }
+
+  try {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+    res.json(updatedOrder);
+  } catch (error) {
+    console.error('Error updating order status:', error.message);
+    res.status(500).json({ error: 'Failed to update order status.' });
   }
 });
 

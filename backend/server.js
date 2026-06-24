@@ -8,6 +8,7 @@ import authRouter from './routes/auth.js';
 import uploadRouter from './routes/upload.js';
 import orderRouter from './routes/order.js';
 import reservationsRouter from './routes/reservations.js';
+import newsletterRouter from './routes/newsletter.js';
 
 import User from './models/User.js';
 
@@ -69,6 +70,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/reservations', reservationsRouter);
+app.use('/api/newsletter', newsletterRouter);
 
 // Basic API Check Route
 app.get('/api/status', (req, res) => {

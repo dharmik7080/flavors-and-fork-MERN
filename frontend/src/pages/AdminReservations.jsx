@@ -69,19 +69,17 @@ function AdminReservations() {
   return (
     <div className="container py-5 text-white" style={{ minHeight: '80vh' }}>
       {/* Header Area */}
-      <div className="text-center mb-5">
-        <div className="d-flex align-items-center justify-content-center gap-3 flex-wrap mb-2">
-          <h1 className="fw-bold text-warning font-serif display-4 mb-0">Live Operational Queue</h1>
-          {reservations.length > 0 && (
-            <button 
-              className="btn btn-outline-red-custom rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2"
-              onClick={handleClearAll}
-            >
-              <i className="bi bi-trash"></i> Clear All Live Bookings
-            </button>
-          )}
-        </div>
-        <p className="text-white-50">Manage active dining table bookings and pre-ordered meals in real time.</p>
+      <div className="d-flex flex-column align-items-center justify-content-center text-center w-100 mb-4">
+        <h1 className="fw-bold text-warning font-serif display-4 mb-0">Live Operational Queue</h1>
+        <p className="text-white-50 mt-2 mb-0">Manage active dining table bookings and pre-ordered meals in real time.</p>
+        {reservations.length > 0 && (
+          <button 
+            className="btn btn-outline-red-custom rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 mt-4 mb-4"
+            onClick={handleClearAll}
+          >
+            <i className="bi bi-trash"></i> Clear All Live Bookings
+          </button>
+        )}
       </div>
 
       {successMsg && (

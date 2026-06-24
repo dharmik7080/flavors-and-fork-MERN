@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Leaf, Zap, Sparkles } from 'lucide-react';
+import gourmetPokeBowl from './gourmet_poke_bowl_transparent.png';
 
 function Home() {
   // Ambiance Carousel Slides Data
@@ -22,6 +24,8 @@ function Home() {
   ];
 
   const [activeSlide, setActiveSlide] = useState(0);
+
+
 
   useEffect(() => {
     const slideInterval = setInterval(() => {
@@ -53,28 +57,35 @@ function Home() {
   return (
     <div className="home-viewport">
       {/* Hero Section */}
-      <header id="home-hero" className="hero-section text-center py-5 rounded-4 mb-5 shadow" style={{
-        backgroundImage: "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        minHeight: '60vh',
-        display: 'flex',
-        alignItems: 'center'
-      }}>
-        <div className="container py-5">
-          <h1 className="display-3 fw-bold text-white mb-3" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.8)' }}>
-            Taste the Tradition
-          </h1>
-          <p className="lead text-white-50 mb-5 fs-4 max-w-600 mx-auto">
-            Where every meal tells a story. Experience authentic flavors in the heart of the city.
-          </p>
-          <div className="d-flex justify-content-center align-items-center gap-4">
-            <Link to="/menu" className="btn btn-warning rounded-pill px-5 py-3 shadow fw-bold">
-              View Menu
-            </Link>
-            <a href="#contact" className="btn btn-outline-light rounded-pill px-4 py-3 fw-bold" style={{ backdropFilter: 'blur(5px)' }}>
-              <i className="bi bi-geo-alt-fill me-2 fs-5"></i> Visit Us
-            </a>
+      <header id="home-hero-split" className="new-split-hero mb-5 shadow">
+        <div className="container py-3">
+          <div className="row align-items-center">
+            {/* Left Column (50% width) */}
+            <div className="col-lg-6 split-hero-left">
+              <h1 className="display-3 fw-bold text-white mb-3" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.8)' }}>
+                Taste the <span className="gold-accent">tradition</span>
+              </h1>
+              <p className="lead text-white-50 mb-5 fs-4">
+                Where every meal tells a story. Experience authentic flavors in the heart of the city.
+              </p>
+              <div className="d-flex justify-content-start align-items-center gap-4">
+                <Link to="/menu" className="btn btn-warning rounded-pill px-5 py-3 shadow fw-bold">
+                  View Menu
+                </Link>
+                <a href="#contact" className="btn btn-glass-hero rounded-pill px-4 py-3 fw-bold">
+                  <i className="bi bi-geo-alt-fill me-2 fs-5"></i> Visit Us
+                </a>
+              </div>
+            </div>
+            {/* Right Column (50% width) */}
+            <div className="col-lg-6 split-hero-right">
+              <div className="radial-glow"></div>
+              <img 
+                src={gourmetPokeBowl} 
+                alt="Signature Dish" 
+                className="floating-food"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -106,10 +117,12 @@ function Home() {
       {/* Features Grid */}
       <section className="features-section my-5">
         <div className="row">
-          <div className="col-md-4 mb-4">
-            <div className="card h-100 border border-secondary bg-dark text-white text-center py-4 rounded-4 shadow-sm">
+          <div className="col-md-4 mb-4 fade-in">
+            <div className="card h-100 premium-feature-card text-center py-4 shadow-sm">
               <div className="card-body">
-                <div className="emoji-circle fs-1 mb-3">🥦</div>
+                <div className="icon-circle mb-3 fresh-icon-glow">
+                  <Leaf size={30} />
+                </div>
                 <h3 className="card-title text-warning mt-2 font-serif">Fresh Ingredients</h3>
                 <p className="card-text text-white-50">
                   We source our ingredients locally to ensure the highest quality and freshness in every dish.
@@ -117,10 +130,12 @@ function Home() {
               </div>
             </div>
           </div>
-          <div className="col-md-4 mb-4">
-            <div className="card h-100 border border-secondary bg-dark text-white text-center py-4 rounded-4 shadow-sm">
+          <div className="col-md-4 mb-4 fade-in delay-100">
+            <div className="card h-100 premium-feature-card text-center py-4 shadow-sm">
               <div className="card-body">
-                <div className="emoji-circle fs-1 mb-3">⚡</div>
+                <div className="icon-circle mb-3 fast-icon-glow">
+                  <Zap size={30} />
+                </div>
                 <h3 className="card-title text-warning mt-2 font-serif">Fast Service</h3>
                 <p className="card-text text-white-50">
                   Our dedicated team triggers your taste buds with quick, efficient, and friendly table service.
@@ -128,10 +143,12 @@ function Home() {
               </div>
             </div>
           </div>
-          <div className="col-md-4 mb-4">
-            <div className="card h-100 border border-secondary bg-dark text-white text-center py-4 rounded-4 shadow-sm">
+          <div className="col-md-4 mb-4 fade-in delay-200">
+            <div className="card h-100 premium-feature-card text-center py-4 shadow-sm">
               <div className="card-body">
-                <div className="emoji-circle fs-1 mb-3">🕯️</div>
+                <div className="icon-circle mb-3 cozy-icon-glow">
+                  <Sparkles size={30} />
+                </div>
                 <h3 className="card-title text-warning mt-2 font-serif">Cozy Ambiance</h3>
                 <p className="card-text text-white-50">
                   Relax and enjoy your meal in our warm, welcoming, and beautifully designed atmosphere.

@@ -1,23 +1,42 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 function Footer() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
 
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailPattern.test(email.trim())) {
       setMsg({ text: '❌ Invalid email format', type: 'error' });
-    } else {
-      setMsg({ text: '✅ Subscribed!', type: 'success' });
-      setEmail(''); // Clear input
+      return;
     }
 
-    setTimeout(() => {
-      setMsg({ text: '', type: '' });
-    }, 3000);
+    setLoading(true);
+    setMsg({ text: '', type: '' });
+
+    try {
+      const response = await axios.post('http://localhost:3000/api/newsletter/subscribe', {
+        email: email.trim()
+      });
+
+      alert("Thank you for joining our community!");
+      setMsg({ text: '✅ Subscribed!', type: 'success' });
+      setEmail(''); // Clear input
+    } catch (err) {
+      console.error('Newsletter subscription failed:', err);
+      const errMsg = err.response?.data?.error || err.response?.data?.message || 'Subscription failed. Please try again.';
+      setMsg({ text: `❌ ${errMsg}`, type: 'error' });
+      alert(errMsg);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        setMsg({ text: '', type: '' });
+      }, 5000);
+    }
   };
 
   return (
@@ -37,15 +56,19 @@ function Footer() {
                 <input 
                   type="email" 
                   id="newsletter-email"
-                  className="form-control rounded-pill rounded-end-0 border-0 py-2 ps-4"
+                  className="form-control newsletter-input"
                   placeholder="Your Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}
                   required
+                  disabled={loading}
                 />
-                <button className="btn btn-warning rounded-pill rounded-start-0 fw-bold px-4" type="submit">
-                  Subscribe
+                <button 
+                  className="btn btn-warning newsletter-btn fw-bold px-4" 
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? 'Subscribing...' : 'Subscribe'}
                 </button>
               </div>
               {msg.text && (

@@ -171,7 +171,7 @@ function Reservation({ triggerToast }) {
     };
 
     try {
-      const response = await axios.post('/api/reservations', payload);
+      const response = await axios.post('http://localhost:3000/api/reservations', payload);
 
       // Mark Table as Booked and persist in LocalStorage with compound key
       const key = `${formData.date}_${formData.timeSlot}`;
@@ -223,6 +223,34 @@ function Reservation({ triggerToast }) {
     setFormErrors({ phone: '', date: '' });
   };
 
+  const renderTableCard = (tableNum, zone) => {
+    const tableId = String(tableNum);
+    const isBooked = bookedTables.includes(tableId);
+    const isSelected = selectedTable === tableId;
+
+    let stateClass = 'available';
+    if (isBooked) stateClass = 'booked';
+    else if (isSelected) stateClass = 'selected';
+
+    let zoneClass = '';
+    if (zone === 'window') zoneClass = 'zone-window';
+    else if (zone === 'lounge') zoneClass = 'zone-lounge';
+    else if (zone === 'booth') zoneClass = 'zone-booth';
+
+    return (
+      <div 
+        key={tableId}
+        onClick={() => handleTableClick(tableId)}
+        className={`table-card ${stateClass} ${zoneClass}`}
+      >
+        Table #{tableId}
+        {isBooked && (
+          <div className="small fw-normal mt-1" style={{ fontSize: '0.8rem' }}>Booked</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="reservation-viewport container my-5 text-white">
       <h2 className="text-center mb-5 font-serif h1 text-warning">Book a Table</h2>
@@ -245,58 +273,39 @@ function Reservation({ triggerToast }) {
             <div className="col-md-6 mb-5 mb-md-0 p-4 bg-dark border border-secondary rounded-4 shadow-sm">
             <h3 className="mb-4 font-serif text-warning">Select a Table</h3>
             
-            {/* 10 Tables Grid */}
-            <div 
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                gap: '15px'
-              }}
-            >
-              {[...Array(10)].map((_, i) => {
-                const tableId = String(i + 1);
-                const isBooked = bookedTables.includes(tableId);
-                const isSelected = selectedTable === tableId;
+            {/* Seating Layout Groups */}
+            <div className="seating-layout-container d-flex flex-column gap-3">
+              {/* Window Views Section */}
+              <div className="seating-section">
+                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
+                  <i className="bi bi-window-sidebar text-warning"></i> WINDOW VIEWS (PREMIUM)
+                </h5>
+                <div className="seating-grid-row gap-4">
+                  {[1, 2, 3, 4].map((num) => renderTableCard(num, 'window'))}
+                </div>
+              </div>
 
-                let cardBg = 'var(--bg-secondary)';
-                let borderStyle = '1px solid var(--border-color)';
-                let textColor = 'var(--text-primary)';
-                let cursorStyle = 'pointer';
+              {/* Main Lounge Section */}
+              <div className="seating-section">
+                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
+                  <i className="bi bi-house-door text-warning"></i> MAIN DINING LOUNGE
+                </h5>
+                <div className="seating-grid-row gap-4">
+                  {[5, 6, 7, 8].map((num) => renderTableCard(num, 'lounge'))}
+                </div>
+              </div>
 
-                if (isBooked) {
-                  cardBg = 'rgba(239, 68, 68, 0.15)';
-                  borderStyle = '1px solid var(--error-color)';
-                  textColor = 'var(--error-color)';
-                  cursorStyle = 'not-allowed';
-                } else if (isSelected) {
-                  cardBg = 'rgba(245, 158, 11, 0.2)';
-                  borderStyle = '2px solid var(--accent-color)';
-                  textColor = 'var(--accent-color)';
-                }
-
-                return (
-                  <div 
-                    key={tableId}
-                    onClick={() => handleTableClick(tableId)}
-                    className="p-4 rounded-3 text-center transition-all shadow-sm"
-                    style={{
-                      background: cardBg,
-                      border: borderStyle,
-                      color: textColor,
-                      cursor: cursorStyle,
-                      fontWeight: 'bold',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    Table {tableId}
-                    {isBooked && (
-                      <div className="small fw-normal mt-1" style={{ fontSize: '0.85rem' }}>Booked</div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Private Booths Section */}
+              <div className="seating-section">
+                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
+                  <i className="bi bi-bookmark-star text-warning"></i> PRIVATE BOOTHS
+                </h5>
+                <div className="booth-grid-row gap-4">
+                  {[9, 10].map((num) => renderTableCard(num, 'booth'))}
+                </div>
+              </div>
             </div>
-            <p className="text-center mt-4 text-white-50 small">Click an available table to select it for reservation.</p>
+            <p className="text-center mt-3 text-white-50 small">Click an available table to select it for reservation.</p>
           </div>
 
           {/* Right Column: Booking Form */}
@@ -307,7 +316,7 @@ function Reservation({ triggerToast }) {
                 <label htmlFor="nameInput" className="form-label text-white-50">Name</label>
                 <input 
                   type="text" 
-                  className="form-control bg-dark text-white border-secondary" 
+                  className="form-control premium-form-input" 
                   id="nameInput" 
                   value={formData.name}
                   onChange={handleNameChange}
@@ -319,7 +328,7 @@ function Reservation({ triggerToast }) {
                 <label htmlFor="phoneInput" className="form-label text-white-50">Phone</label>
                 <input 
                   type="tel" 
-                  className="form-control bg-dark text-white border-secondary" 
+                  className="form-control premium-form-input" 
                   id="phoneInput" 
                   value={formData.phone}
                   onChange={handlePhoneChange}
@@ -332,7 +341,7 @@ function Reservation({ triggerToast }) {
                 <label htmlFor="emailInput" className="form-label text-white-50">Email</label>
                 <input 
                   type="email" 
-                  className="form-control bg-dark text-white border-secondary" 
+                  className="form-control premium-form-input" 
                   id="emailInput" 
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -344,7 +353,7 @@ function Reservation({ triggerToast }) {
                 <label htmlFor="dateInput" className="form-label text-white-50">Date</label>
                 <input 
                   type="date" 
-                  className="form-control bg-dark text-white border-secondary" 
+                  className="form-control premium-form-input" 
                   id="dateInput" 
                   value={formData.date}
                   onChange={handleDateChange}
@@ -356,7 +365,7 @@ function Reservation({ triggerToast }) {
               <div className="mb-3">
                 <label htmlFor="timeSlotInput" className="form-label text-white-50">Time Slot</label>
                 <select 
-                  className="form-select bg-dark text-white border-secondary" 
+                  className="form-select premium-form-input" 
                   id="timeSlotInput" 
                   value={formData.timeSlot}
                   onChange={(e) => setFormData({ ...formData, timeSlot: e.target.value })}
@@ -372,7 +381,7 @@ function Reservation({ triggerToast }) {
                 <label htmlFor="guestCountInput" className="form-label text-white-50">Guest Count</label>
                 <input 
                   type="number" 
-                  className="form-control bg-dark text-white border-secondary" 
+                  className="form-control premium-form-input" 
                   id="guestCountInput" 
                   min="1" 
                   max="20" 

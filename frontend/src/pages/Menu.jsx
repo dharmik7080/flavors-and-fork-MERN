@@ -257,35 +257,37 @@ function Menu({ triggerToast }) {
   const handleConfirmPayment = () => {
     setIsProcessingPayment(true);
     
-    axios.post('/api/orders/checkout', {
-      email: 'customer@flavorsandfork.com', // mock client email
-      items: cart,
-      grandTotal: grandTotal
-    })
-    .then((res) => {
-      const orderId = Math.floor(Math.random() * 9000 + 1000);
-      let successMsg = `Order #ORD-${orderId} placed via ${paymentMethod}!`;
-      if (res.data.previewUrl) {
-        successMsg += ` (Invoice email sent!)`;
-        console.log('Nodemailer test preview invoice link:', res.data.previewUrl);
-      }
-      triggerToast(successMsg);
+    setTimeout(() => {
+      axios.post('/api/orders/checkout', {
+        email: 'customer@flavorsandfork.com', // mock client email
+        items: cart,
+        grandTotal: grandTotal
+      })
+      .then((res) => {
+        const orderId = Math.floor(Math.random() * 9000 + 1000);
+        let successMsg = `Order #ORD-${orderId} placed via ${paymentMethod}!`;
+        if (res.data.previewUrl) {
+          successMsg += ` (Invoice email sent!)`;
+          console.log('Nodemailer test preview invoice link:', res.data.previewUrl);
+        }
+        triggerToast(successMsg);
 
-      // Reset cart and states
-      clearCart();
-      setPromoCode('');
-      setPromoMsg({ text: '', type: '' });
-      setPaymentMethod('');
-      setShowPaymentModal(false);
-      setShowCartDrawer(false);
-    })
-    .catch((err) => {
-      console.error('Checkout API error:', err);
-      alert('Order Placement Failed: Connection to the checkout service was lost. Please check if the backend is online.');
-    })
-    .finally(() => {
-      setIsProcessingPayment(false);
-    });
+        // Reset cart and states
+        clearCart();
+        setPromoCode('');
+        setPromoMsg({ text: '', type: '' });
+        setPaymentMethod('');
+        setShowPaymentModal(false);
+        setShowCartDrawer(false);
+      })
+      .catch((err) => {
+        console.error('Checkout API error:', err);
+        alert('Order Placement Failed: Connection to the checkout service was lost. Please check if the backend is online.');
+      })
+      .finally(() => {
+        setIsProcessingPayment(false);
+      });
+    }, 2000); // 2 seconds of fake processing time
   };
 
   const sortedItems = [...menuItems].sort((a, b) => {
@@ -305,7 +307,7 @@ function Menu({ triggerToast }) {
       {/* Search and Filters */}
       <div className="container mt-4 mb-3">
         {/* Search and Sort Row */}
-        <div className="d-flex flex-wrap justify-content-end gap-3 mb-4">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
           {/* Price Sorting Selector */}
           <div style={{ minWidth: '185px' }}>
             <select
@@ -342,7 +344,7 @@ function Menu({ triggerToast }) {
 
         {/* Filter Bar (Isolated Sticky pill button rows) */}
         <div 
-          className="row justify-content-center" 
+          className="d-flex justify-content-center align-items-center shadow-sm" 
           style={{
             position: 'sticky',
             top: '20px',
@@ -350,13 +352,15 @@ function Menu({ triggerToast }) {
             backgroundColor: 'rgba(11, 15, 25, 0.9)',
             backdropFilter: 'blur(10px)',
             borderRadius: '50px',
-            padding: '10px 20px',
+            padding: '10px 24px',
             border: '1px solid var(--border-color)',
-            marginBottom: '40px'
+            marginBottom: '40px',
+            width: 'fit-content',
+            marginLeft: 'auto',
+            marginRight: 'auto'
           }}
         >
-          <div className="col-md-12 text-center">
-            <div className="btn-group flex-wrap gap-2 justify-content-center" role="group">
+          <div className="btn-group flex-wrap gap-2 justify-content-center" role="group">
               <button 
                 type="button" 
                 className={`btn rounded-pill px-4 btn-sm ${activeCategory === 'all' ? 'btn-warning text-dark fw-bold' : 'btn-outline-light'}`}
@@ -409,7 +413,6 @@ function Menu({ triggerToast }) {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Menu Grid */}
       <div className="container">
