@@ -619,7 +619,7 @@ function Menu({ triggerToast }) {
                   className="btn btn-warning w-100 py-3 fw-bold rounded-pill" 
                   onClick={() => setShowPaymentModal(true)}
                 >
-                  Place Order <i class="bi bi-arrow-right-circle-fill ms-2"></i>
+                  Place Order <i className="bi bi-arrow-right-circle-fill ms-2"></i>
                 </button>
                 
                 <button 
