@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700;900&family=Pacifico&display=swap');
 
 /* CSS Variables for Light/Dark Theme */
 :root {
@@ -38,6 +38,15 @@ h3,
 .text-gold {
   color: var(--gold-color) !important;
 }
+
+.logo-pacifico {
+  font-family: 'Pacifico', cursive !important;
+  color: var(--gold-color, #d4af37) !important;
+  font-size: 1.75rem !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
 
 /* App Layout Wrapper */
 .app-wrapper {
@@ -746,4 +755,26 @@ body.dark-mode .navbar-sticky.top-navbar {
   cursor: not-allowed !important;
 }
 
+/* Navbar Inner Wrapper Spacing Alignment */
+.navbar-inner-wrapper {
+  max-width: 1280px !important; /* max-w-7xl equivalent */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1.5rem !important; /* px-6 equivalent */
+  padding-right: 1.5rem !important;
+  width: 100% !important;
+}
+
+@media (min-width: 768px) {
+  .navbar-inner-wrapper {
+    padding-left: 2rem !important; /* md:px-8 equivalent */
+    padding-right: 2rem !important;
+  }
+}
+
+/* Custom customer links styling to scale them up slightly and make them semibold */
+.nav-link-custom {
+  font-size: 1.05rem !important; /* approx text-base / text-lg */
+  font-weight: 600 !important; /* font-semibold */
+}
 

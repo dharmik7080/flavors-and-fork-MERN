@@ -9,6 +9,7 @@ function Navbar({ isDarkMode, toggleTheme }) {
   const isAdmin = user && (user.isAdmin === true || user.role === 'admin');
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin') || location.pathname === '/analytics';
 
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -40,8 +41,8 @@ function Navbar({ isDarkMode, toggleTheme }) {
 
   return (
     <nav className={`navbar navbar-expand-lg navbar-dark navbar-sticky ${isScrolled ? 'scrolled-navbar' : 'top-navbar'}`}>
-      <div className="container">
-        <Link className="navbar-brand font-serif" to="/">Flavors & Fork</Link>
+      <div className="container navbar-inner-wrapper">
+        <Link className="navbar-brand logo-pacifico" to="/">Flavors & Fork</Link>
         <button 
           className="navbar-toggler" 
           type="button" 
@@ -53,18 +54,7 @@ function Navbar({ isDarkMode, toggleTheme }) {
         </button>
         <div className={`collapse navbar-collapse ${isOpen ? 'show' : ''}`} id="navbarNav">
           <ul className="navbar-nav me-auto">
-            <li className="nav-item">
-              <Link className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} to="/">Home</Link>
-            </li>
-            <li className="nav-item">
-              <Link className={`nav-link ${location.pathname === '/menu' ? 'active' : ''}`} to="/menu">Menu</Link>
-            </li>
-            {!isAdmin && (
-              <li className="nav-item">
-                <Link className={`nav-link ${location.pathname === '/reservation' ? 'active' : ''}`} to="/reservation">Reservation</Link>
-              </li>
-            )}
-            {isAdmin && (
+            {isAdmin && isAdminPage ? (
               <>
                 <li className="nav-item">
                   <Link className={`nav-link ${location.pathname === '/analytics' ? 'active' : ''}`} to="/analytics">Analytics</Link>
@@ -77,6 +67,18 @@ function Navbar({ isDarkMode, toggleTheme }) {
                 </li>
                 <li className="nav-item">
                   <Link className={`nav-link ${location.pathname === '/admin/orders' ? 'active' : ''}`} to="/admin/orders">Kitchen Orders</Link>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="nav-item">
+                  <Link className={`nav-link nav-link-custom ${location.pathname === '/' ? 'active' : ''}`} to="/">Home</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link nav-link-custom ${location.pathname === '/menu' ? 'active' : ''}`} to="/menu">Menu</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link nav-link-custom ${location.pathname === '/reservation' ? 'active' : ''}`} to="/reservation">Reservation</Link>
                 </li>
               </>
             )}

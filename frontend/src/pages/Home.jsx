@@ -63,7 +63,7 @@ function Home() {
             {/* Left Column (50% width) */}
             <div className="col-lg-6 split-hero-left">
               <h1 className="display-3 fw-bold text-white mb-3" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.8)' }}>
-                Taste the <span className="gold-accent">tradition</span>
+                Taste the <span className="gold-accent">Tradition</span>
               </h1>
               <p className="lead text-white-50 mb-5 fs-4">
                 Where every meal tells a story. Experience authentic flavors in the heart of the city.

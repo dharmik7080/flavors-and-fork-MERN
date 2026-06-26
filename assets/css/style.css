@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700;900&family=Pacifico&display=swap');
 
 /* CSS Variables for Light/Dark Theme */
 
@@ -739,4 +739,19 @@ input#promoCodeInput:disabled {
     border-radius: 4px;
     margin-top: auto;
     width: 100%;
+}
+
+/* logo-pacifico styles matching the MERN panel logo */
+.logo-pacifico {
+    font-family: 'Pacifico', cursive !important;
+    color: var(--gold-color, #d4af37) !important;
+    font-size: 1.75rem !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+}
+
+/* Custom customer links styling to scale them up slightly and make them semibold */
+.nav-link-custom {
+    font-size: 1.05rem !important; /* approx text-base / text-lg */
+    font-weight: 600 !important; /* font-semibold */
 }
