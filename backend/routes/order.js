@@ -122,6 +122,8 @@ router.post('/checkout', async (req, res) => {
       })),
       grandTotal,
       tableNo: req.body.tableNo || 'N/A',
+      serviceType: req.body.serviceType || 'dine-in',
+      deliveryAddress: req.body.deliveryAddress || 'N/A',
       status: 'Pending'
     });
 

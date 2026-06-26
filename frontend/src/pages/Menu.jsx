@@ -167,13 +167,18 @@ function Menu({ triggerToast }) {
   const [favorites, setFavorites] = useState([]);
 
   // Promo Code States
-  const [promoCode, setPromoCode] = useState('');
-  const [promoMsg, setPromoMsg] = useState({ text: '', type: '' });
+  const [promoInput, setPromoInput] = useState('');
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedCode, setAppliedCode] = useState('');
+  const [promoError, setPromoError] = useState('');
 
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [serviceType, setServiceType] = useState('dine-in');
+  const [selectedTable, setSelectedTable] = useState('Table 1');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   // Load favorites from local storage
   useEffect(() => {
@@ -235,23 +240,42 @@ function Menu({ triggerToast }) {
   };
 
   // Promo Code Validation
-  const applyPromoCode = () => {
-    const code = promoCode.trim().toUpperCase();
-    const validCodes = {
-      'BDAY20': 0.20,
-      'WELCOME10': 0.10,
-      'FLAVOR50': 0.50
-    };
+  const itemTotal = subtotal;
 
-    if (validCodes.hasOwnProperty(code)) {
-      const discountVal = subtotal * validCodes[code];
-      setDiscount(discountVal);
-      setPromoMsg({ text: `Discount applied: -₹${Math.round(discountVal)}`, type: 'success' });
+  const VALID_COUPONS = {
+    'FIRST10': { type: 'percentage', value: 0.10 }, // 10% off the item total
+    'FLAVORS20': { type: 'percentage', value: 0.20 }, // 20% off the item total
+    'NODELIVERY': { type: 'flat', value: 20 } // Waives the platform fee
+  };
+
+  const handleApplyPromo = () => {
+    setPromoError('');
+    const code = promoInput.trim().toUpperCase();
+
+    if (!code) return;
+
+    if (VALID_COUPONS[code]) {
+      const coupon = VALID_COUPONS[code];
+      let calculatedDiscount = 0;
+
+      if (coupon.type === 'percentage') {
+        calculatedDiscount = itemTotal * coupon.value;
+      } else if (coupon.type === 'flat') {
+        calculatedDiscount = coupon.value;
+      }
+
+      setDiscountAmount(calculatedDiscount);
+      setAppliedCode(code);
+      setDiscount(calculatedDiscount);
     } else {
-      setPromoMsg({ text: code === '' ? 'Please enter a code.' : 'Invalid promo code.', type: 'error' });
+      setPromoError('Invalid promo code. Try FIRST10!');
+      setDiscountAmount(0);
+      setAppliedCode('');
       setDiscount(0);
     }
   };
+
+  const toPay = Math.max(0, Math.round(subtotal + gst + platformFee - discountAmount));
 
   // Payment Confirmation with backend API request
   const handleConfirmPayment = () => {
@@ -261,7 +285,10 @@ function Menu({ triggerToast }) {
       axios.post('/api/orders/checkout', {
         email: 'customer@flavorsandfork.com', // mock client email
         items: cart,
-        grandTotal: grandTotal
+        grandTotal: toPay,
+        serviceType: serviceType,
+        tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A',
+        deliveryAddress: serviceType === 'delivery' ? deliveryAddress : 'N/A'
       })
       .then((res) => {
         const orderId = Math.floor(Math.random() * 9000 + 1000);
@@ -274,8 +301,10 @@ function Menu({ triggerToast }) {
 
         // Reset cart and states
         clearCart();
-        setPromoCode('');
-        setPromoMsg({ text: '', type: '' });
+        setPromoInput('');
+        setDiscountAmount(0);
+        setAppliedCode('');
+        setPromoError('');
         setPaymentMethod('');
         setShowPaymentModal(false);
         setShowCartDrawer(false);
@@ -500,7 +529,7 @@ function Menu({ triggerToast }) {
           onClick={() => setShowCartDrawer(true)}
         >
           <h5 className="mb-0 ms-2"><i className="bi bi-cart4 me-2"></i>{cart.reduce((qty, item) => qty + item.qty, 0)} Items</h5>
-          <h5 className="mb-0 me-3">Total: ₹{grandTotal} <i className="bi bi-chevron-up ms-2 small"></i></h5>
+          <h5 className="mb-0 me-3">Total: ₹{toPay} <i className="bi bi-chevron-up ms-2 small"></i></h5>
         </div>
       )}
 
@@ -567,22 +596,27 @@ function Menu({ triggerToast }) {
                     type="text" 
                     className="form-control bg-dark text-white border-secondary"
                     placeholder="Enter promo code"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    disabled={discount > 0}
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    disabled={appliedCode !== ''}
                   />
                   <button 
-                    className={`btn ${discount > 0 ? 'btn-success text-white' : 'btn-warning text-dark'} fw-bold`}
+                    className={`btn ${appliedCode !== '' ? 'btn-success text-white' : 'btn-warning text-dark'} fw-bold`}
                     type="button"
-                    onClick={applyPromoCode}
-                    disabled={discount > 0}
+                    onClick={handleApplyPromo}
+                    disabled={appliedCode !== ''}
                   >
-                    {discount > 0 ? 'Applied' : 'Apply'}
+                    {appliedCode !== '' ? 'Applied' : 'Apply'}
                   </button>
                 </div>
-                {promoMsg.text && (
-                  <p className={`mt-2 mb-0 small fw-bold ${promoMsg.type === 'success' ? 'text-success' : 'text-danger'}`}>
-                    {promoMsg.text}
+                {appliedCode && (
+                  <p className="mt-2 mb-0 small fw-bold text-success">
+                    Code {appliedCode} applied! -₹{discountAmount.toFixed(2)}
+                  </p>
+                )}
+                {promoError && (
+                  <p className="mt-2 mb-0 small fw-bold text-danger">
+                    {promoError}
                   </p>
                 )}
               </div>
@@ -601,10 +635,10 @@ function Menu({ triggerToast }) {
                   <span>Platform Fee</span>
                   <span>₹{platformFee.toFixed(2)}</span>
                 </div>
-                {discount > 0 && (
+                {discountAmount > 0 && (
                   <div className="d-flex justify-content-between mb-2 text-success small fw-bold">
                     <span>Discount Applied</span>
-                    <span>-₹{Math.round(discount)}</span>
+                    <span>-₹{Math.round(discountAmount)}</span>
                   </div>
                 )}
                 
@@ -612,7 +646,7 @@ function Menu({ triggerToast }) {
                 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <span className="fs-5 fw-bold">To Pay</span>
-                  <span className="fs-2 fw-bold text-warning font-serif">₹{grandTotal}</span>
+                  <span className="fs-2 fw-bold text-warning font-serif">₹{toPay}</span>
                 </div>
                 
                 <button 
@@ -624,7 +658,13 @@ function Menu({ triggerToast }) {
                 
                 <button 
                   className="btn btn-outline-danger w-100 rounded-pill mt-2" 
-                  onClick={clearCart}
+                  onClick={() => {
+                    clearCart();
+                    setPromoInput('');
+                    setDiscountAmount(0);
+                    setAppliedCode('');
+                    setPromoError('');
+                  }}
                 >
                   Clear Cart
                 </button>
@@ -685,9 +725,65 @@ function Menu({ triggerToast }) {
                     <h6 className="text-center text-white-50 mb-4">
                       Selected Method: <span className="text-warning fw-bold">{paymentMethod}</span>
                     </h6>
+
+                    {/* Service Type Selection */}
+                    <div className="my-4 border-top border-secondary pt-3">
+                      <label className="d-block text-xs fw-bold text-white-50 mb-3 text-uppercase tracking-wider">How would you like your meal?</label>
+                      <div className="d-flex gap-3 mb-4">
+                        <button
+                          type="button"
+                          onClick={() => setServiceType('dine-in')}
+                          style={{ transition: 'all 0.2s ease' }}
+                          className={`btn flex-fill py-3 rounded-3 fw-bold border-2 ${serviceType === 'dine-in' ? 'btn-warning text-dark border-warning shadow-lg' : 'btn-outline-secondary text-white-50 border-secondary'}`}
+                        >
+                          🍽️ Dine-In
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setServiceType('delivery')}
+                          style={{ transition: 'all 0.2s ease' }}
+                          className={`btn flex-fill py-3 rounded-3 fw-bold border-2 ${serviceType === 'delivery' ? 'btn-warning text-dark border-warning shadow-lg' : 'btn-outline-secondary text-white-50 border-secondary'}`}
+                        >
+                          🚗 Delivery
+                        </button>
+                      </div>
+
+                      {serviceType === 'dine-in' ? (
+                        <div className="bg-black bg-opacity-40 border border-secondary p-4 rounded-3 fade-in">
+                          <label className="d-block text-xs fw-bold text-white-50 mb-2 text-uppercase">Select Your Table Number</label>
+                          <select 
+                            value={selectedTable}
+                            onChange={(e) => setSelectedTable(e.target.value)}
+                            className="form-select bg-dark border-secondary rounded p-3 text-white focus-ring"
+                            style={{ '--bs-focus-ring-color': 'rgba(212, 175, 55, 0.25)' }}
+                          >
+                            <option value="Table 1">Table 1 (2 Seater)</option>
+                            <option value="Table 2">Table 2 (4 Seater)</option>
+                            <option value="Table 3">Table 3 (Family Booth)</option>
+                            <option value="Table 4">Table 4 (Window View)</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="bg-black bg-opacity-40 border border-secondary p-4 rounded-3 fade-in">
+                          <div>
+                            <label className="d-block text-xs fw-bold text-white-50 mb-2 text-uppercase">Delivery Drop-off Address</label>
+                            <textarea
+                              required
+                              rows="2"
+                              placeholder="Enter complete building name, apartment/flat number, street, and landmark..."
+                              value={deliveryAddress}
+                              onChange={(e) => setDeliveryAddress(e.target.value)}
+                              className="form-control bg-dark border-secondary rounded p-3 text-white"
+                              style={{ color: '#fff' }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="bg-white text-dark p-3 rounded-4 d-flex justify-content-between align-items-center fw-bold mb-4">
                       <span>Total Payable:</span>
-                      <span className="fs-5">₹{grandTotal}</span>
+                      <span className="fs-5">₹{toPay}</span>
                     </div>
                     <div className="d-flex gap-2">
                       <button 

@@ -59,9 +59,34 @@ function Analytics({ triggerToast }) {
     };
   }, []);
 
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,Category,Active Dishes Count,Average Price,Total Category Valuation\n";
+    
+    analyticsData.forEach(row => {
+      const catName = row._id ? row._id.charAt(0).toUpperCase() + row._id.slice(1) : 'Uncategorized';
+      csvContent += `${catName},${row.count},₹${row.averagePrice.toFixed(2)},₹${row.totalValue}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Flavors_Fork_Sales_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="analytics-viewport container my-5 text-white">
-      <h2 className="text-center mb-5 font-serif h1 text-warning">Restaurant Business Analytics</h2>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5">
+        <h2 className="font-serif h1 text-warning mb-3 mb-md-0">Restaurant Business Analytics</h2>
+        <button 
+          className="btn btn-warning rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2"
+          onClick={handleExportCSV}
+        >
+          📥 Export Sales Summary (.CSV)
+        </button>
+      </div>
 
       {isLoading ? (
         <div className="text-center py-5">

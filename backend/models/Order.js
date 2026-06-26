@@ -32,6 +32,15 @@ const orderSchema = new mongoose.Schema({
   tableNo: {
     type: String,
     default: 'N/A'
+  },
+  serviceType: {
+    type: String,
+    enum: ['dine-in', 'delivery'],
+    default: 'dine-in'
+  },
+  deliveryAddress: {
+    type: String,
+    default: 'N/A'
   }
 }, {
   timestamps: true

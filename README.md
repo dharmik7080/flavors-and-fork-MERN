@@ -13,6 +13,8 @@ Featuring a custom glassmorphism design language, real-time table reservation co
 * **Frosted-Glass Navigation:** A fully scroll-responsive, dynamic glassmorphic navbar that fluidly toggles background blurs (`backdrop-filter: blur(12px)`) as users explore the page.
 * **Branded Typography:** Custom integration of the elegant **Pacifico** cursive headline script on the brand logo asset.
 * **Balanced Menu Filter Panel:** Dual-aligned toolbar layout positioning a **Default Sort** control dropdown on the far-left and a responsive search bar on the far-right corner, framing an evenly spaced category capsule track (*All, Veg, Non-Veg, Starters, Main Course, Desserts, Beverages*).
+* **Conditional Service Type Checkout:** An end-to-end integrated checkout option toggling between 🍽️ Dine-In (with table selector) and 🚗 Delivery (with drop-off address entry) options.
+* **Interactive Promo Code System:** Dynamic client-side validation of coupons (`FIRST10`, `FLAVORS20`, `NODELIVERY`) with automatic real-time deduction updates and success/error reporting.
 * **Functional Footer Ecosystem:** An integrated newsletter subscription mechanism backed by state handlers and MongoDB database persistence.
 
 ### 📅 Advanced Table Reservation System
@@ -28,7 +30,10 @@ Featuring a custom glassmorphism design language, real-time table reservation co
 * **Business Analytics Dashboard:** Financial and inventory summary layers parsing core restaurant metrics:
   * *Aggregate KPI Cards:* Dynamic metrics calculating Total Valuations, Category-Specific Average Dishes Prices, and Live Counts.
   * *Category Valuation Ledger:* A data-table breaking down active restaurant inventories with smooth row-hover visual feedback (`hover:bg-zinc-800/40`).
+  * *CSV Export Engine:* A one-click download feature permitting managers to export sales summary reports instantly to physical local storage.
 * **Live Kitchen Display System (KDS):** Direct pipeline rendering active cooking queues for rapid line completion and status fulfillment.
+  * *Elapsed Time Tracker:* Live ticking clocks showing the exact time elapsed since order submission (e.g. `12 mins ago`) to help prioritize cooking tasks.
+  * *Print KOT:* Inline printer configuration permitting cooks to output formatted Courier-style kitchen tickets with one click.
 
 ---
 

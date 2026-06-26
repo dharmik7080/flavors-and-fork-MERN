@@ -7,7 +7,6 @@ function AdminReservations() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const notificationAudio = useRef(new Audio('/notification.mp3'));
   const prevLength = useRef(null);
 
   // Fetch all reservations
@@ -18,11 +17,60 @@ function AdminReservations() {
       // Sort reservations by date and time slot (latest or earliest first, let's keep chronologically sorted)
       const sorted = (response.data || []).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      // Check if reservations length has increased and play chime
-      if (prevLength.current !== null && sorted.length > prevLength.current) {
-        notificationAudio.current.play().catch(err => console.log("Autoplay prevented: awaits user interaction."));
+      // Check if reservations length has increased and play chime with debug logs
+      const incomingLength = sorted.length;
+      console.log("--- Admin Reservations Audio Notification Debug ---");
+      console.log("Previous Length Ref:", prevLength.current);
+      console.log("Incoming Data Length:", incomingLength);
+
+      if (prevLength.current !== null && incomingLength > prevLength.current) {
+        console.log("🚀 Condition MET! Ringing service bell chime...");
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContext();
+
+          // Automatically wake up the audio context if Chrome suspended it
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+
+          // Create primary sharp strike and a secondary resonant overtone
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+
+          // High-pitched crystal bell frequencies (Tuned to high G and C notes)
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(1567.98, ctx.currentTime); // High G6 strike
+          
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(2093.00, ctx.currentTime); // High C7 resonance ring
+
+          // Bell volume envelope: Instant sharp strike, long beautiful decay tail
+          gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2); // Fades out over 1.2 seconds
+
+          // Connect everything to your MacBook speakers
+          osc1.connect(gainNode);
+          osc2.connect(gainNode);
+          gainNode.connect(ctx.destination);
+
+          // Start both wave frequencies together
+          osc1.start();
+          osc2.start();
+          
+          // Stop playing after the decay ends
+          osc1.stop(ctx.currentTime + 1.2);
+          osc2.stop(ctx.currentTime + 1.2);
+
+          console.log("🔊 Bell chime rang successfully!");
+        } catch (err) {
+          console.error("❌ Audio synthesis failed:", err);
+        }
+      } else {
+        console.log("🛑 Condition NOT met.");
       }
-      prevLength.current = sorted.length;
+      prevLength.current = incomingLength;
 
       setReservations(sorted);
     } catch (err) {
