@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 function KitchenOrders() {
@@ -7,12 +7,23 @@ function KitchenOrders() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const notificationAudio = useRef(new Audio('/notification.mp3'));
+  const prevLength = useRef(null);
+
   // Fetch active incoming orders
   const fetchOrders = async (showLoader = false) => {
     try {
       if (showLoader) setLoading(true);
       const response = await axios.get('/api/orders');
-      setOrders(response.data || []);
+      const data = response.data || [];
+
+      // Check if data length has increased and play chime
+      if (prevLength.current !== null && data.length > prevLength.current) {
+        notificationAudio.current.play().catch(err => console.log("Autoplay prevented: awaits user interaction."));
+      }
+      prevLength.current = data.length;
+
+      setOrders(data);
       setErrorMsg('');
     } catch (err) {
       console.error('Error fetching kitchen orders:', err);

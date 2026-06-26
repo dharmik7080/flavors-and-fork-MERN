@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 function AdminReservations() {
@@ -7,24 +7,42 @@ function AdminReservations() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Fetch all reservations on mount
-  const fetchReservations = async () => {
+  const notificationAudio = useRef(new Audio('/notification.mp3'));
+  const prevLength = useRef(null);
+
+  // Fetch all reservations
+  const fetchReservations = async (showLoader = false) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const response = await axios.get('/api/reservations');
       // Sort reservations by date and time slot (latest or earliest first, let's keep chronologically sorted)
       const sorted = (response.data || []).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      // Check if reservations length has increased and play chime
+      if (prevLength.current !== null && sorted.length > prevLength.current) {
+        notificationAudio.current.play().catch(err => console.log("Autoplay prevented: awaits user interaction."));
+      }
+      prevLength.current = sorted.length;
+
       setReservations(sorted);
     } catch (err) {
       console.error('Error fetching reservations:', err);
       setErrorMsg('Failed to load live reservations queue.');
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReservations();
+    // Initial fetch with spinner
+    fetchReservations(true);
+
+    // Set up polling interval to check for new incoming reservations every 10 seconds
+    const interval = setInterval(() => {
+      fetchReservations(false);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Handle Mark Completed & Clear Table
