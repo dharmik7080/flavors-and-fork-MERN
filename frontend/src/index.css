@@ -794,3 +794,15 @@ body.dark-mode .navbar-sticky.top-navbar {
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Scroll to Top scale transitions helper classes matching Tailwind notation */
+.hover\:scale-110:hover {
+  transform: scale(1.1) !important;
+}
+.active\:scale-95:active {
+  transform: scale(0.95) !important;
+}
+
+.hover\:bg-\[\#f5b002\]:hover {
+  background-color: #f5b002 !important;
+}
+

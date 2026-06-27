@@ -56,6 +56,28 @@ function App() {
     }, 3000);
   };
 
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.scrollY > 300) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', toggleVisibility);
+    return () => window.removeEventListener('scroll', toggleVisibility);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   return (
     <AuthProvider>
       <CartProvider>
@@ -129,6 +151,36 @@ function App() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Scroll to Top Floating Button */}
+            {isVisible && (
+              <button
+                onClick={scrollToTop}
+                style={{
+                  position: 'fixed',
+                  bottom: '24px',
+                  right: '24px',
+                  zIndex: 50,
+                  backgroundColor: '#fcc203', // Exact Flavors & Fork Brand Golden Gold
+                  color: '#0a0a0a', // Dark Zinc Text/Arrow for crisp contrast
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '22px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                className="hover:scale-110 active:scale-95 hover:bg-[#f5b002]"
+              >
+                ↑
+              </button>
             )}
           </div>
         </Router>
