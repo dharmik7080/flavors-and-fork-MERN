@@ -57,18 +57,28 @@ function App() {
   };
 
   const [isVisible, setIsVisible] = useState(false);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
 
   useEffect(() => {
-    const toggleVisibility = () => {
-      if (window.scrollY > 300) {
+    const handleScroll = () => {
+      // Calculate current scroll depth metrics
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      
+      // Calculate percentage integer (0 to 100)
+      const totalScroll = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollPercentage(totalScroll);
+
+      // Handle visibility toggle
+      if (scrollTop > 300) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
-    return () => window.removeEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToTop = () => {
@@ -162,24 +172,53 @@ function App() {
                   bottom: '24px',
                   right: '24px',
                   zIndex: 50,
-                  backgroundColor: '#fcc203', // Exact Flavors & Fork Brand Golden Gold
-                  color: '#0a0a0a', // Dark Zinc Text/Arrow for crisp contrast
+                  backgroundColor: '#0a0a0a', // Dark interior canvas background so the ring pops out crisp
                   width: '46px',
                   height: '46px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '22px',
-                  fontWeight: 'bold',
                   boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
                   cursor: 'pointer',
                   border: 'none',
-                  transition: 'all 0.2s ease-in-out'
+                  padding: 0
                 }}
-                className="hover:scale-110 active:scale-95 hover:bg-[#f5b002]"
+                className="hover:scale-110 active:scale-95 transition-transform duration-200"
               >
-                ↑
+                <svg width="46" height="46" style={{ transform: 'rotate(-90deg)' }}>
+                  {/* Background Track Circle */}
+                  <circle
+                    cx="23"
+                    cy="23"
+                    r="18"
+                    stroke="#27272a"
+                    strokeWidth="3"
+                    fill="transparent"
+                  />
+                  {/* Dynamic Brand Golden Progress Circle */}
+                  <circle
+                    cx="23"
+                    cy="23"
+                    r="18"
+                    stroke="#fcc203"
+                    strokeWidth="3"
+                    fill="transparent"
+                    strokeDasharray={113}
+                    strokeDashoffset={113 - (113 * scrollPercentage) / 100}
+                    // Zero transition styling allows raw, immediate hardware-accelerated repaints
+                  />
+                </svg>
+                {/* Arrow Overlay positioned perfectly inside */}
+                <span style={{
+                  position: 'absolute',
+                  color: '#fcc203',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  top: '46%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)'
+                }}>↑</span>
               </button>
             )}
           </div>
