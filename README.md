@@ -27,6 +27,7 @@ The architecture is fully decoupled and optimized for production environments:
 * **Conditional Service Type Checkout:** An end-to-end integrated checkout option toggling between 🍽️ Dine-In (with table selector) and 🚗 Delivery (with drop-off address entry) options.
 * **Interactive Promo Code System:** Dynamic client-side validation of coupons (`FIRST10`, `FLAVORS20`, `NODELIVERY`) with automatic real-time deduction updates and success/error reporting.
 * **Functional Footer Ecosystem:** An integrated newsletter subscription mechanism backed by state handlers and MongoDB database persistence.
+* **Resilient Component Architecture:** State-encapsulated image exception handling that automatically swaps out broken or missing menu links for premium brand-colored linear gradients, preserving visual parities.
 
 ### 📅 Advanced Table Reservation System
 * **Visual Restaurant Floor Plan:** Real-time physical seating grids broken down into strategic zones:
