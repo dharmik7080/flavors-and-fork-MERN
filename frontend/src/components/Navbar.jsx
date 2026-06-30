@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { CartContext } from '../context/CartContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 function Navbar({ isDarkMode, toggleTheme }) {
   const { totalItemsCount, setShowCartDrawer } = useContext(CartContext);
-  const { user, logout } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const isAdmin = user && (user.isAdmin === true || user.role === 'admin');
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -38,6 +40,21 @@ function Navbar({ isDarkMode, toggleTheme }) {
     const interval = setInterval(checkStatus, 60000); // Check every minute
     return () => clearInterval(interval);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      // 1. Clear backend session if applicable
+      await axios.post('/api/auth/logout');
+    } catch (error) {
+      console.error("Client-side logout api error:", error);
+    } finally {
+      // 2. Erase global frontend user state
+      setUser(null);
+      localStorage.removeItem('flavorsAndForkUser');
+      // 3. Bounce back to public landing page
+      navigate('/');
+    }
+  };
 
   return (
     <nav className={`navbar navbar-expand-lg navbar-dark navbar-sticky ${isScrolled ? 'scrolled-navbar' : 'top-navbar'}`}>
@@ -117,11 +134,12 @@ function Navbar({ isDarkMode, toggleTheme }) {
                 </Link>
               )}
             </li>
-            {user && (
+            {user && isAdminPage && (
               <li className="nav-item d-flex align-items-center ms-3">
                 <button 
-                  onClick={logout} 
-                  className="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold"
+                  onClick={handleLogout} 
+                  className="btn border border-danger text-danger rounded-pill px-3 py-1 bg-transparent"
+                  style={{ fontSize: '0.9rem', fontWeight: '600' }}
                 >
                   Logout
                 </button>

@@ -86,6 +86,29 @@ router.post('/deletesession', (req, res) => {
   });
 });
 
+// POST /api/auth/logout - Alias to teardown session and clear browser cookies
+router.post('/logout', (req, res) => {
+  if (!req.session) {
+    return res.json({ status: 'success', message: 'No active session to destroy' });
+  }
+  
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err.message);
+      return res.status(500).json({ error: 'Failed to destroy session during logout' });
+    }
+    
+    // Clear default express-session cookie
+    res.clearCookie('connect.sid');
+    
+    res.json({
+      status: 'success',
+      message: 'Session destroyed and cookie cleared successfully'
+    });
+  });
+});
+
+
 // POST /api/auth/login - Authenticate user and save session
 router.post('/login', async (req, res) => {
   try {

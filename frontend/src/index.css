@@ -806,3 +806,101 @@ body.dark-mode .navbar-sticky.top-navbar {
   background-color: #f5b002 !important;
 }
 
+/* Tailwind custom utility classes used by hero buttons */
+.inline-flex {
+  display: inline-flex !important;
+}
+.items-center {
+  align-items: center !important;
+}
+.justify-center {
+  justify-content: center !important;
+}
+.h-12 {
+  height: 3rem !important;
+}
+.px-8 {
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+.px-10 {
+  padding-left: 2.5rem !important;
+  padding-right: 2.5rem !important;
+}
+.bg-\[\#fcc203\] {
+  background-color: #fcc203 !important;
+}
+.text-\[\#0a0a0a\] {
+  color: #0a0a0a !important;
+}
+.font-medium {
+  font-weight: 500 !important;
+}
+.font-semibold {
+  font-weight: 600 !important;
+}
+.rounded-full {
+  border-radius: 9999px !important;
+}
+.hover\:scale-105:hover {
+  transform: scale(1.05) !important;
+}
+.transition-transform {
+  transition: transform 0.2s ease-in-out !important;
+}
+.border-white\/60 {
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+}
+.border-white {
+  border: 1px solid #ffffff !important;
+}
+
+/* Premium Hero Section buttons matching the exact layout screenshot */
+.btn-hero-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #fcc203 !important;
+  color: #000000 !important;
+  font-size: 1.15rem !important; /* Premium font size */
+  font-weight: 700 !important; /* Bold font weight */
+  height: 56px !important;
+  padding: 0 44px !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out !important;
+  text-decoration: none !important;
+}
+
+.btn-hero-primary:hover {
+  transform: scale(1.05) !important;
+  background-color: #f5b002 !important;
+}
+
+.btn-hero-secondary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: rgba(28, 25, 23, 0.4) !important; /* Translucent dark tint background */
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  height: 56px !important;
+  padding: 0 44px !important;
+  border-radius: 9999px !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important; /* White border outline */
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out !important;
+  text-decoration: none !important;
+}
+
+.btn-hero-secondary:hover {
+  transform: scale(1.05) !important;
+  background-color: rgba(28, 25, 23, 0.6) !important;
+}
+
+.btn-hero-secondary .bi-geo-alt-fill {
+  font-size: 1.35rem !important; /* Map pin sizing */
+  color: #ffffff !important;
+  margin-top: -1px;
+}
+

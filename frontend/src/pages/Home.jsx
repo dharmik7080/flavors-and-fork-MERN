@@ -62,18 +62,18 @@ function Home() {
           <div className="row align-items-center">
             {/* Left Column (50% width) */}
             <div className="col-lg-6 split-hero-left">
-              <h1 className="display-3 fw-bold text-white mb-3" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.8)' }}>
-                Taste the <span className="gold-accent">Tradition</span>
+              <h1 className="display-4 fw-bold text-white mb-4" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.8)' }}>
+                Diverse Plates. <span className="gold-accent">Unified Taste.</span>
               </h1>
               <p className="lead text-white-50 mb-5 fs-4">
-                Where every meal tells a story. Experience authentic flavors in the heart of the city.
+                Where multi-cuisine mastery meets modern dining. Experience a curated journey of global comfort foods and rich classics.
               </p>
               <div className="d-flex justify-content-start align-items-center gap-4">
-                <Link to="/menu" className="btn btn-warning rounded-pill px-5 py-3 shadow fw-bold">
+                <Link to="/menu" className="btn-hero-primary">
                   View Menu
                 </Link>
-                <a href="#contact" className="btn btn-glass-hero rounded-pill px-4 py-3 fw-bold">
-                  <i className="bi bi-geo-alt-fill me-2 fs-5"></i> Visit Us
+                <a href="#contact" className="btn-hero-secondary">
+                  <i className="bi bi-geo-alt-fill me-2"></i> Visit Us
                 </a>
               </div>
             </div>
