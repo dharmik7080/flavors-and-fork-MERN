@@ -4,6 +4,17 @@ A premium, production-grade MERN stack application engineered for modern restaur
 
 Featuring a custom glassmorphism design language, real-time table reservation configurations, an operational kitchen display system, and comprehensive financial business analytics.
 
+🌐 **Live Application URL:** [https://flavors-and-fork-mern.vercel.app](https://flavors-and-fork-mern.vercel.app)
+
+---
+
+## 🔗 Production Deployment
+
+The architecture is fully decoupled and optimized for production environments:
+* **Frontend Web App:** Hosted on **Vercel** with optimized build-caching, rendering fluid user interfaces instantly.
+* **Backend REST API:** Hosted on **Render** utilizing automated continuous integration deployments linked directly to the application repository.
+* **Cloud Database Engine:** Powered by **MongoDB Atlas**, featuring data-parity clustering, customized compound indexes, and cloud-synchronized persistence.
+
 ---
 
 ## 🚀 Core Features
