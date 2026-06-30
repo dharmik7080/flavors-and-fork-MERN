@@ -142,6 +142,90 @@ const localMenuData = [
   }
 ];
 
+// Standalone MenuCard component to encapsulate image error handling state safely
+function MenuCard({ dish, cart, favorites, toggleFavorite, removeFromCart, addToCart }) {
+  const [imgSrc, setImgSrc] = useState(dish.image);
+  
+  // Keep imgSrc updated if the dish prop changes
+  useEffect(() => {
+    setImgSrc(dish.image);
+  }, [dish.image]);
+
+  const cartItem = cart.find(item => item.id === dish.id);
+  const isFavorite = favorites.includes(dish.id);
+
+  return (
+    <div className="col-md-4 mb-4">
+      <div className="card h-100 border border-secondary bg-dark text-white rounded-4 overflow-hidden position-relative shadow-sm hover-card">
+        <button 
+          onClick={() => toggleFavorite(dish.id)} 
+          className="btn btn-sm position-absolute top-0 end-0 m-3 rounded-circle bg-dark bg-opacity-70 border-0"
+          style={{ zIndex: 10, width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <i className={`bi ${isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-white-50'}`}></i>
+        </button>
+        {imgSrc ? (
+          <img 
+            src={imgSrc} 
+            className="card-img-top" 
+            alt={dish.name} 
+            onError={() => setImgSrc(null)}
+            style={{ height: '200px', objectFit: 'cover' }}
+          />
+        ) : (
+          <div 
+            className="card-img-top d-flex flex-column align-items-center justify-content-center text-warning" 
+            style={{ 
+              height: '200px', 
+              borderBottom: '1px solid var(--bs-border-color-translucent)',
+              background: 'linear-gradient(135deg, #1e1b4b 0%, #311005 100%)' 
+            }}
+          >
+            <i className="bi bi-image fs-1 mb-2"></i>
+            <span className="fw-semibold font-serif px-3 text-center">{dish.name}</span>
+          </div>
+        )}
+        <div className="card-body d-flex flex-column p-4">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h5 className="card-title mb-0 font-serif fw-bold">{dish.name}</h5>
+            <span className="badge bg-warning text-dark rounded-pill fw-bold">₹{dish.price}</span>
+          </div>
+          <p className="card-text text-white-50 small mb-4">{dish.description}</p>
+          
+          <div className="mt-auto">
+            {cartItem ? (
+              <div className="d-flex justify-content-between align-items-center w-100 border border-secondary rounded-pill p-1">
+                <button 
+                  className="btn btn-outline-danger btn-sm rounded-circle" 
+                  onClick={() => removeFromCart(dish.id)}
+                  style={{ width: '32px', height: '32px', padding: 0 }}
+                >
+                  <i className="bi bi-dash"></i>
+                </button>
+                <span className="fw-bold fs-5">{cartItem.qty}</span>
+                <button 
+                  className="btn btn-outline-success btn-sm rounded-circle" 
+                  onClick={() => addToCart(dish)}
+                  style={{ width: '32px', height: '32px', padding: 0 }}
+                >
+                  <i className="bi bi-plus"></i>
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold" 
+                onClick={() => addToCart(dish)}
+              >
+                Add to Order
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Menu({ triggerToast }) {
   const {
     cart,
@@ -456,66 +540,17 @@ function Menu({ triggerToast }) {
                 <p className="fs-5 text-white-50">No dishes matched your filters.</p>
               </div>
             ) : (
-              sortedItems.map(dish => {
-                const cartItem = cart.find(item => item.id === dish.id);
-                const isFavorite = favorites.includes(dish.id);
-
-                return (
-                  <div key={dish.id} className="col-md-4 mb-4">
-                    <div className="card h-100 border border-secondary bg-dark text-white rounded-4 overflow-hidden position-relative shadow-sm hover-card">
-                      <button 
-                        onClick={() => toggleFavorite(dish.id)} 
-                        className="btn btn-sm position-absolute top-0 end-0 m-3 rounded-circle bg-dark bg-opacity-70 border-0"
-                        style={{ zIndex: 10, width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <i className={`bi ${isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-white-50'}`}></i>
-                      </button>
-                      <img 
-                        src={dish.image} 
-                        className="card-img-top" 
-                        alt={dish.name} 
-                        style={{ height: '200px', objectFit: 'cover' }}
-                      />
-                      <div className="card-body d-flex flex-column p-4">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <h5 className="card-title mb-0 font-serif fw-bold">{dish.name}</h5>
-                          <span className="badge bg-warning text-dark rounded-pill fw-bold">₹{dish.price}</span>
-                        </div>
-                        <p className="card-text text-white-50 small mb-4">{dish.description}</p>
-                        
-                        <div className="mt-auto">
-                          {cartItem ? (
-                            <div className="d-flex justify-content-between align-items-center w-100 border border-secondary rounded-pill p-1">
-                              <button 
-                                className="btn btn-outline-danger btn-sm rounded-circle" 
-                                onClick={() => removeFromCart(dish.id)}
-                                style={{ width: '32px', height: '32px', padding: 0 }}
-                              >
-                                <i className="bi bi-dash"></i>
-                              </button>
-                              <span className="fw-bold fs-5">{cartItem.qty}</span>
-                              <button 
-                                className="btn btn-outline-success btn-sm rounded-circle" 
-                                onClick={() => addToCart(dish)}
-                                style={{ width: '32px', height: '32px', padding: 0 }}
-                              >
-                                <i className="bi bi-plus"></i>
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              className="btn btn-outline-warning w-100 rounded-pill py-2 fw-bold" 
-                              onClick={() => addToCart(dish)}
-                            >
-                              Add to Order
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              sortedItems.map(dish => (
+                <MenuCard
+                  key={dish.id}
+                  dish={dish}
+                  cart={cart}
+                  favorites={favorites}
+                  toggleFavorite={toggleFavorite}
+                  removeFromCart={removeFromCart}
+                  addToCart={addToCart}
+                />
+              ))
             )}
           </div>
         )}
