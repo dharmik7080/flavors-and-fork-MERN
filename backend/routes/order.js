@@ -86,14 +86,19 @@ async function sendOrderEmail(email, items, grandTotal) {
       </html>
     `;
 
-    const info = await transporter.sendMail({
+    transporter.sendMail({
       from: '"Flavors & Fork" <orders@flavorsandfork.com>',
       to: email,
       subject: 'Flavors & Fork - Order Confirmation Invoice 🧾',
       html: htmlContent
+    }, (emailError, info) => {
+      if (emailError) {
+        console.error("❌ NODEMAILER FAILURE DETAILS:", emailError.message);
+      } else {
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
+      }
     });
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`Test email dispatched successfully. Preview URL: ${previewUrl}`);
   } catch (emailError) {
     console.error("❌ NODEMAILER FAILURE DETAILS:", emailError.message);
   }

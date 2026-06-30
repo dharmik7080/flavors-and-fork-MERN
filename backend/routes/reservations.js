@@ -50,6 +50,21 @@ router.post('/', async (req, res) => {
 
     await NewReservation.save();
 
+    // Set a cookie to remember the customer's last reserved table (24 hours expiration, readable by frontend JS)
+    res.cookie('last_booked_table', NewReservation.tableId, { 
+      maxAge: 24 * 60 * 60 * 1000, 
+      httpOnly: false 
+    });
+
+    // Return response payload matching your frontend expectations immediately to prevent gateway timeouts
+    res.status(201).json({
+      status: 'success',
+      message: 'Reservation confirmed successfully!',
+      reservation: NewReservation,
+      tableId: NewReservation.tableId
+    });
+
+    // Trigger email delivery asynchronously in the background
     // Check if variables are accessible globally from server.js boot sequence
     const userEmail = process.env.EMAIL_USER;
     const userPass = process.env.EMAIL_PASS;
@@ -120,26 +135,12 @@ router.post('/', async (req, res) => {
       `
     };
 
-    // Send the email live and log status cleanly in the console
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
-    } catch (mailError) {
-      console.error("❌ NODEMAILER FAILURE DETAILS:", mailError.message);
-    }
-
-    // Set a cookie to remember the customer's last reserved table (24 hours expiration, readable by frontend JS)
-    res.cookie('last_booked_table', NewReservation.tableId, { 
-      maxAge: 24 * 60 * 60 * 1000, 
-      httpOnly: false 
-    });
-
-    // Return response payload matching your frontend expectations
-    res.status(201).json({
-      status: 'success',
-      message: 'Reservation confirmed successfully!',
-      reservation: NewReservation,
-      tableId: NewReservation.tableId
+    transporter.sendMail(mailOptions, (mailError, info) => {
+      if (mailError) {
+        console.error("❌ NODEMAILER FAILURE DETAILS:", mailError.message);
+      } else {
+        console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
+      }
     });
   } catch (error) {
     console.error('Reservation booking error:', error.message);
