@@ -19,7 +19,7 @@ function Footer() {
     setMsg({ text: '', type: '' });
 
     try {
-      const response = await axios.post('http://localhost:3000/api/newsletter/subscribe', {
+      const response = await axios.post('/api/newsletter/subscribe', {
         email: email.trim()
       });
 

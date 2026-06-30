@@ -171,7 +171,7 @@ function Reservation({ triggerToast }) {
     };
 
     try {
-      const response = await axios.post('http://localhost:3000/api/reservations', payload);
+      const response = await axios.post('/api/reservations', payload);
 
       // Mark Table as Booked and persist in LocalStorage with compound key
       const key = `${formData.date}_${formData.timeSlot}`;

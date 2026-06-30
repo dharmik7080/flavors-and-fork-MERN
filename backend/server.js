@@ -40,13 +40,16 @@ connectDB().then(async () => {
 });
 
 // Middlewares
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://flavors-and-fork-mern.vercel.app'
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-  ],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(cookieParser());
