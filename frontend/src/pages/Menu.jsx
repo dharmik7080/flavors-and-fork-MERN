@@ -568,31 +568,43 @@ function Menu({ triggerToast }) {
         </div>
       )}
 
-      {/* Cart Drawer (HTML Ported as slide-in drawer) */}
-      <div 
-        className={`offcanvas offcanvas-bottom h-auto bg-dark text-white border-top border-secondary ${showCartDrawer ? 'show' : ''}`}
-        style={{ 
-          visibility: showCartDrawer ? 'visible' : 'hidden',
-          minHeight: '40vh',
-          maxHeight: '80vh',
-          zIndex: 1060,
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          transition: 'transform 0.35s ease-in-out',
-          transform: showCartDrawer ? 'translateY(0)' : 'translateY(100%)'
-        }}
-      >
-        <div className="offcanvas-header border-bottom border-secondary bg-dark d-flex justify-content-between p-3">
-          <h5 className="offcanvas-title fw-bold text-warning font-serif">Your Order</h5>
-          <button 
-            type="button" 
-            className="btn-close btn-close-white" 
-            onClick={() => setShowCartDrawer(false)}
-          ></button>
-        </div>
-        <div className="offcanvas-body p-4" style={{ overflowY: 'auto', maxHeight: 'calc(80vh - 70px)' }}>
+      {/* Cart Modal (Centered Pop-Up) */}
+      {showCartDrawer && (
+        <div 
+          className="modal fade show" 
+          tabIndex="-1" 
+          role="dialog"
+          style={{ 
+            display: 'block', 
+            backgroundColor: 'rgba(0, 0, 0, 0.75)', 
+            zIndex: 1060 
+          }}
+        >
+          <div 
+            className="modal-dialog modal-dialog-centered" 
+            style={{ 
+              maxWidth: '650px', 
+              width: '90%', 
+              margin: 'auto' 
+            }}
+          >
+            <div 
+              className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4 overflow-hidden"
+              style={{
+                maxHeight: '85vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <div className="modal-header border-bottom border-secondary bg-dark d-flex justify-content-between p-3">
+                <h5 className="modal-title fw-bold text-warning font-serif">Your Order</h5>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white" 
+                  onClick={() => setShowCartDrawer(false)}
+                ></button>
+              </div>
+              <div className="modal-body p-4" style={{ overflowY: 'auto', maxHeight: 'calc(85vh - 70px)' }}>
           <div className="mb-4">
             {cart.length === 0 ? (
               <p className="text-white-50 text-center mt-5">Your cart is empty.</p>
@@ -706,8 +718,11 @@ function Menu({ triggerToast }) {
               </div>
             </div>
           )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Payment Selection Modal (HTML Ported) */}
       {showPaymentModal && (
