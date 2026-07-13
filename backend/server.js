@@ -1,4 +1,6 @@
 import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
@@ -9,6 +11,7 @@ import uploadRouter from './routes/upload.js';
 import orderRouter from './routes/order.js';
 import reservationsRouter from './routes/reservations.js';
 import newsletterRouter from './routes/newsletter.js';
+import paymentRouter from './routes/paymentRoutes.js';
 
 import User from './models/User.js';
 
@@ -74,6 +77,7 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/newsletter', newsletterRouter);
+app.use('/api/payment', paymentRouter);
 
 // Basic API Check Route
 app.get('/api/status', (req, res) => {

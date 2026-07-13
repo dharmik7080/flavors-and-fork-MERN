@@ -263,6 +263,8 @@ function Menu({ triggerToast }) {
   const [serviceType, setServiceType] = useState('dine-in');
   const [selectedTable, setSelectedTable] = useState('Table 1');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [showMockRazorpayModal, setShowMockRazorpayModal] = useState(false);
+  const [mockRazorpayData, setMockRazorpayData] = useState(null);
 
   // Load favorites from local storage
   useEffect(() => {
@@ -361,46 +363,191 @@ function Menu({ triggerToast }) {
 
   const toPay = Math.max(0, Math.round(subtotal + gst + platformFee - discountAmount));
 
+  const handleMockRazorpaySuccess = (orderData) => {
+    setShowMockRazorpayModal(false);
+    setIsProcessingPayment(true);
+
+    axios.post('/api/orders/checkout', {
+      email: 'customer@flavorsandfork.com',
+      items: cart,
+      grandTotal: toPay,
+      serviceType: serviceType,
+      tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A',
+      deliveryAddress: serviceType === 'delivery' ? deliveryAddress : 'N/A',
+      razorpayOrderId: orderData.orderId,
+      razorpayPaymentId: 'pay_mockSandboxId123',
+      razorpaySignature: 'mockSignature123',
+      paymentStatus: 'Paid'
+    })
+    .then((res) => {
+      const orderId = Math.floor(Math.random() * 9000 + 1000);
+      let successMsg = `Order #ORD-${orderId} placed via Razorpay (Simulated Success)!`;
+      if (res.data.previewUrl) {
+        successMsg += ` (Invoice email sent!)`;
+      }
+      triggerToast(successMsg);
+
+      // Reset states
+      clearCart();
+      setPromoInput('');
+      setDiscountAmount(0);
+      setAppliedCode('');
+      setPromoError('');
+      setPaymentMethod('');
+      setShowPaymentModal(false);
+      setShowCartDrawer(false);
+    })
+    .catch((err) => {
+      console.error('Mock Checkout error:', err);
+      alert('Mock Order Placement Failed.');
+    })
+    .finally(() => {
+      setIsProcessingPayment(false);
+    });
+  };
+
   // Payment Confirmation with backend API request
   const handleConfirmPayment = () => {
     setIsProcessingPayment(true);
-    
-    setTimeout(() => {
-      axios.post('/api/orders/checkout', {
-        email: 'customer@flavorsandfork.com', // mock client email
-        items: cart,
-        grandTotal: toPay,
-        serviceType: serviceType,
-        tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A',
-        deliveryAddress: serviceType === 'delivery' ? deliveryAddress : 'N/A'
-      })
-      .then((res) => {
-        const orderId = Math.floor(Math.random() * 9000 + 1000);
-        let successMsg = `Order #ORD-${orderId} placed via ${paymentMethod}!`;
-        if (res.data.previewUrl) {
-          successMsg += ` (Invoice email sent!)`;
-          console.log('Nodemailer test preview invoice link:', res.data.previewUrl);
-        }
-        triggerToast(successMsg);
 
-        // Reset cart and states
-        clearCart();
-        setPromoInput('');
-        setDiscountAmount(0);
-        setAppliedCode('');
-        setPromoError('');
-        setPaymentMethod('');
-        setShowPaymentModal(false);
-        setShowCartDrawer(false);
+    // If payment method is cash on delivery, proceed directly to standard checkout route
+    if (paymentMethod === 'Cash') {
+      setTimeout(() => {
+        axios.post('/api/orders/checkout', {
+          email: 'customer@flavorsandfork.com', // mock client email
+          items: cart,
+          grandTotal: toPay,
+          serviceType: serviceType,
+          tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A',
+          deliveryAddress: serviceType === 'delivery' ? deliveryAddress : 'N/A',
+          paymentStatus: 'Pending'
+        })
+        .then((res) => {
+          const orderId = Math.floor(Math.random() * 9000 + 1000);
+          let successMsg = `Order #ORD-${orderId} placed via Cash on Delivery!`;
+          if (res.data.previewUrl) {
+            successMsg += ` (Invoice email sent!)`;
+            console.log('Nodemailer test preview invoice link:', res.data.previewUrl);
+          }
+          triggerToast(successMsg);
+
+          // Reset cart and states
+          clearCart();
+          setPromoInput('');
+          setDiscountAmount(0);
+          setAppliedCode('');
+          setPromoError('');
+          setPaymentMethod('');
+          setShowPaymentModal(false);
+          setShowCartDrawer(false);
+        })
+        .catch((err) => {
+          console.error('Checkout API error:', err);
+          alert('Order Placement Failed: Connection to the checkout service was lost. Please check if the backend is online.');
+        })
+        .finally(() => {
+          setIsProcessingPayment(false);
+        });
+      }, 1500);
+      return;
+    }
+
+    // For online payment methods (UPI, Card), initialize Razorpay transaction options
+    axios.post('/api/payment/create-order', { amount: toPay })
+      .then((orderRes) => {
+        if (orderRes.data.status !== 'success') {
+          throw new Error('Failed to instantiate payment order on server.');
+        }
+
+        const orderData = orderRes.data;
+
+        if (!window.Razorpay || orderData.orderId.startsWith('order_mock_')) {
+          console.warn("⚠️ Razorpay in mock mode. Launching sandbox simulation popup modal...");
+          setMockRazorpayData(orderData);
+          setShowMockRazorpayModal(true);
+          return;
+        }
+
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_mockKey123', // fallback test key
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Flavors & Fork',
+          description: 'Premium Multi-Cuisine Dining Checkout',
+          order_id: orderData.orderId,
+          handler: async function (response) {
+            try {
+              // Verify signature
+              const verifyRes = await axios.post('/api/payment/verify-payment', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+
+              if (verifyRes.data.status === 'success') {
+                // Save Order details with payment details
+                const checkoutRes = await axios.post('/api/orders/checkout', {
+                  email: 'customer@flavorsandfork.com',
+                  items: cart,
+                  grandTotal: toPay,
+                  serviceType: serviceType,
+                  tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A',
+                  deliveryAddress: serviceType === 'delivery' ? deliveryAddress : 'N/A',
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  paymentStatus: 'Paid'
+                });
+
+                const orderId = Math.floor(Math.random() * 9000 + 1000);
+                let successMsg = `Order #ORD-${orderId} placed via ${paymentMethod}!`;
+                if (checkoutRes.data.previewUrl) {
+                  successMsg += ` (Invoice email sent!)`;
+                }
+                triggerToast(successMsg);
+
+                // Reset states
+                clearCart();
+                setPromoInput('');
+                setDiscountAmount(0);
+                setAppliedCode('');
+                setPromoError('');
+                setPaymentMethod('');
+                setShowPaymentModal(false);
+                setShowCartDrawer(false);
+              } else {
+                alert('Payment verification failed on server.');
+              }
+            } catch (err) {
+              console.error('Payment verification failed:', err);
+              alert('CORS/Signature check failed on server verification.');
+            } finally {
+              setIsProcessingPayment(false);
+            }
+          },
+          prefill: {
+            name: 'Customer Name',
+            email: 'customer@flavorsandfork.com',
+            contact: '9999999999'
+          },
+          theme: {
+            color: '#fcc203' // signature amber gold color
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessingPayment(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
       })
       .catch((err) => {
-        console.error('Checkout API error:', err);
-        alert('Order Placement Failed: Connection to the checkout service was lost. Please check if the backend is online.');
-      })
-      .finally(() => {
+        console.error('Razorpay order creation error:', err);
+        alert('Failed to initiate Razorpay payment transaction. Please verify if the backend server is running.');
         setIsProcessingPayment(false);
       });
-    }, 2000); // 2 seconds of fake processing time
   };
 
   const sortedItems = [...menuItems].sort((a, b) => {
@@ -872,6 +1019,76 @@ function Menu({ triggerToast }) {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mock Razorpay Sandbox Simulator Modal */}
+      {showMockRazorpayModal && mockRazorpayData && (
+        <div 
+          className="modal fade show" 
+          tabIndex="-1" 
+          role="dialog"
+          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1090 }}
+        >
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
+            <div className="modal-content text-dark border-0 shadow-lg overflow-hidden rounded-4" style={{ fontFamily: 'sans-serif' }}>
+              {/* Header resembling Razorpay */}
+              <div className="p-4 text-white text-center position-relative" style={{ backgroundColor: '#1f2937', borderBottom: '4px solid #fcc203' }}>
+                <h5 className="mb-1 fw-bold tracking-wide">Flavors & Fork</h5>
+                <p className="mb-0 text-white-50 small">Premium Multi-Cuisine Dining Checkout</p>
+                <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-3 px-2 py-1" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Razorpay Test Mode</span>
+              </div>
+              
+              {/* Body */}
+              <div className="modal-body p-4 bg-light text-center">
+                <div className="mb-4">
+                  <small className="text-muted d-block text-uppercase fw-bold tracking-wider mb-1">Amount to Pay</small>
+                  <h2 className="fw-bold text-dark mb-0">₹{toPay}</h2>
+                </div>
+
+                <div className="card border-0 bg-white shadow-sm p-3 mb-4 rounded-3 text-start">
+                  <div className="d-flex justify-content-between mb-2 small">
+                    <span className="text-muted">Order ID:</span>
+                    <span className="fw-bold text-secondary">{mockRazorpayData.orderId}</span>
+                  </div>
+                  <div className="d-flex justify-content-between small">
+                    <span className="text-muted">Prefill Email:</span>
+                    <span className="fw-bold text-secondary">customer@flavorsandfork.com</span>
+                  </div>
+                </div>
+
+                <p className="text-muted small mb-4">
+                  Choose an action to simulate the payment response from the Razorpay API gateway interface.
+                </p>
+
+                <div className="d-grid gap-2">
+                  <button 
+                    type="button" 
+                    className="btn py-3 fw-bold text-dark shadow-sm"
+                    style={{ backgroundColor: '#fcc203', border: 'none', transition: 'transform 0.1s ease' }}
+                    onClick={() => handleMockRazorpaySuccess(mockRazorpayData)}
+                  >
+                    Simulate Success Payment
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-danger py-2 fw-bold"
+                    onClick={() => {
+                      setShowMockRazorpayModal(false);
+                      setIsProcessingPayment(false);
+                    }}
+                  >
+                    Simulate Cancel / Failure
+                  </button>
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="p-3 bg-white text-center border-top text-muted small d-flex justify-content-center align-items-center gap-1">
+                <i className="bi bi-shield-fill-check text-success"></i> Secured by Razorpay Mock Engine
               </div>
             </div>
           </div>

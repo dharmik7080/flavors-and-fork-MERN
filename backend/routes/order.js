@@ -129,7 +129,11 @@ router.post('/checkout', async (req, res) => {
       tableNo: req.body.tableNo || 'N/A',
       serviceType: req.body.serviceType || 'dine-in',
       deliveryAddress: req.body.deliveryAddress || 'N/A',
-      status: 'Pending'
+      status: 'Pending',
+      razorpayOrderId: req.body.razorpayOrderId,
+      razorpayPaymentId: req.body.razorpayPaymentId,
+      razorpaySignature: req.body.razorpaySignature,
+      paymentStatus: req.body.paymentStatus || 'Pending'
     });
 
     // Fire email notifications in background asynchronously
