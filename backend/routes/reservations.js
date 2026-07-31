@@ -4,6 +4,37 @@ import Reservation from '../models/Reservation.js';
 
 const router = express.Router();
 
+// Force Gmail SMTP production transporter directly using environment variables
+const userEmail = process.env.EMAIL_USER || 'dharmikthakkar2203@gmail.com';
+const userPass = process.env.EMAIL_PASS || 'lfkutelywvrpehgx';
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // true for port 465, false for port 587
+  auth: {
+    user: userEmail,
+    pass: userPass
+  },
+  tls: {
+    rejectUnauthorized: false // bypass SSL verification failures if running on platforms with strict firewalls
+  }
+});
+
+// Immediately test SMTP connection configuration when the server boots
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ RESERVATION EMAIL TRANSPORTER VERIFICATION FAILED:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      stack: error.stack
+    });
+  } else {
+    console.log('🚀 RESERVATION EMAIL SMTP CONNECTION VERIFIED: Transporter is ready to deliver messages.');
+  }
+});
+
 // GET /api/reservations/availability - Check which tables are booked for a date and time slot
 router.get('/availability', async (req, res) => {
   try {
@@ -56,42 +87,19 @@ router.post('/', async (req, res) => {
       httpOnly: false 
     });
 
-    // Return response payload matching your frontend expectations immediately to prevent gateway timeouts
-    res.status(201).json({
-      status: 'success',
-      message: 'Reservation confirmed successfully!',
-      reservation: NewReservation,
-      tableId: NewReservation.tableId
-    });
-
-    // Trigger email delivery asynchronously in the background
-    // Check if variables are accessible globally from server.js boot sequence
-    const userEmail = process.env.EMAIL_USER;
-    const userPass = process.env.EMAIL_PASS;
-
-    if (!userEmail || !userPass) {
-      console.error('⚠️ Environment variables are missing at route runtime!');
-    }
-
-    // Force Gmail SMTP production transporter directly using environment variables
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: userEmail || 'dharmikthakkar2203@gmail.com', // fallback directly to your email
-        pass: userPass || 'lfkutelywvrpehgx'             // fallback directly to your app pass
-      }
-    });
-
     let preOrderHtml = '';
     if (preOrderItems && preOrderItems.length > 0) {
-      const itemsList = preOrderItems.map(item => `
-        <tr style="border-bottom: 1px solid #333;">
-          <td style="padding: 10px; color: #ffffff;">${item.name}</td>
-          <td style="padding: 10px; color: #ffffff; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; color: #ffffff; text-align: right;">₹${item.price}</td>
-          <td style="padding: 10px; color: #ffffff; text-align: right;">₹${item.price * item.quantity}</td>
-        </tr>
-      `).join('');
+      const itemsList = preOrderItems.map(item => {
+        const itemQty = item.qty || item.quantity || 1;
+        return `
+          <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ffffff;">${item.name}</td>
+            <td style="padding: 10px; color: #ffffff; text-align: center;">${itemQty}</td>
+            <td style="padding: 10px; color: #ffffff; text-align: right;">₹${item.price}</td>
+            <td style="padding: 10px; color: #ffffff; text-align: right;">₹${item.price * itemQty}</td>
+          </tr>
+        `;
+      }).join('');
 
       preOrderHtml = `
         <h3 style="color: #f2c94c; margin-top: 20px;">Pre-Ordered Items</h3>
@@ -115,7 +123,7 @@ router.post('/', async (req, res) => {
     }
 
     const mailOptions = {
-      from: `"Flavors & Fork" <${userEmail || 'dharmikthakkar2203@gmail.com'}>`,
+      from: `"Flavors & Fork" <${userEmail}>`,
       to: email,
       subject: '🍽️ Table Reservation Confirmed! - Flavors & Fork',
       html: `
@@ -135,12 +143,27 @@ router.post('/', async (req, res) => {
       `
     };
 
-    transporter.sendMail(mailOptions, (mailError, info) => {
-      if (mailError) {
-        console.error("❌ NODEMAILER FAILURE DETAILS:", mailError.message);
-      } else {
-        console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
-      }
+    let emailSent = false;
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
+      emailSent = true;
+    } catch (mailError) {
+      console.error("❌ NODEMAILER FAILURE DETAILS:", {
+        message: mailError.message,
+        code: mailError.code,
+        command: mailError.command,
+        stack: mailError.stack
+      });
+    }
+
+    // Return response payload matching your frontend expectations
+    res.status(201).json({
+      status: 'success',
+      message: 'Reservation confirmed successfully!',
+      reservation: NewReservation,
+      tableId: NewReservation.tableId,
+      emailSent: emailSent
     });
   } catch (error) {
     console.error('Reservation booking error:', error.message);
