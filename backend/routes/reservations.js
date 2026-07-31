@@ -18,7 +18,10 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false // bypass SSL verification failures if running on platforms with strict firewalls
-  }
+  },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 5000
 });
 
 // Immediately test SMTP connection configuration when the server boots
@@ -146,10 +149,10 @@ router.post('/', async (req, res) => {
     let emailSent = false;
     try {
       const info = await transporter.sendMail(mailOptions);
-      console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
+      console.log('✅ Email sent successfully! ->', info.response);
       emailSent = true;
     } catch (mailError) {
-      console.error("❌ NODEMAILER FAILURE DETAILS:", {
+      console.error("❌ Email failed on Vercel:", {
         message: mailError.message,
         code: mailError.code,
         command: mailError.command,
