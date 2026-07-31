@@ -132,6 +132,31 @@ function AdminNewsletter({ triggerToast }) {
           <div className="card bg-dark border-secondary rounded-4 shadow-sm p-4 h-100">
             <h3 className="mb-4 font-serif text-warning">Compose Broadcast</h3>
             
+            <style>{`
+              .newsletter-custom-input {
+                background-color: #18181b !important;
+                color: #ffffff !important;
+                border: 1px solid rgba(245, 158, 11, 0.3) !important;
+                border-radius: 8px !important;
+                padding: 12px 16px !important;
+                transition: all 0.3s ease-in-out !important;
+              }
+              .newsletter-custom-input::placeholder {
+                color: #9ca3af !important;
+                opacity: 1 !important;
+              }
+              .newsletter-custom-input:focus {
+                background-color: #18181b !important;
+                border-color: #fbbf24 !important;
+                box-shadow: 0 0 0 1px #fbbf24 !important;
+                outline: none !important;
+              }
+              .newsletter-custom-label {
+                color: #fbbf24 !important;
+                font-weight: 600 !important;
+              }
+            `}</style>
+            
             {feedback.text && (
               <div 
                 className={`alert ${feedback.type === 'success' ? 'alert-success bg-success bg-opacity-10 text-success border-success' : 'alert-danger bg-danger bg-opacity-10 text-danger border-danger'} rounded-3 p-3 mb-4`}
@@ -142,10 +167,10 @@ function AdminNewsletter({ triggerToast }) {
 
             <form onSubmit={handleBroadcastSubmit}>
               <div className="mb-3">
-                <label htmlFor="subjectLine" className="form-label text-white-50">Subject Line</label>
+                <label htmlFor="subjectLine" className="form-label newsletter-custom-label">Subject Line</label>
                 <input 
                   type="text" 
-                  className="form-control premium-form-input text-white bg-transparent border-secondary" 
+                  className="form-control newsletter-custom-input" 
                   id="subjectLine"
                   name="subject"
                   value={formData.subject}
@@ -157,9 +182,9 @@ function AdminNewsletter({ triggerToast }) {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="broadcastMessage" className="form-label text-white-50">Message Content (HTML Allowed)</label>
+                <label htmlFor="broadcastMessage" className="form-label newsletter-custom-label">Message Content (HTML Allowed)</label>
                 <textarea 
-                  className="form-control premium-form-input text-white bg-transparent border-secondary" 
+                  className="form-control newsletter-custom-input" 
                   id="broadcastMessage"
                   name="message"
                   rows="10"
