@@ -252,9 +252,10 @@ function Menu({ triggerToast }) {
 
   // Promo Code States
   const [promoInput, setPromoInput] = useState('');
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [appliedCode, setAppliedCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
 
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -327,41 +328,50 @@ function Menu({ triggerToast }) {
 
   // Promo Code Validation
   const itemTotal = subtotal;
-
-  const VALID_COUPONS = {
-    'FIRST10': { type: 'percentage', value: 0.10 }, // 10% off the item total
-    'FLAVORS20': { type: 'percentage', value: 0.20 }, // 20% off the item total
-    'NODELIVERY': { type: 'flat', value: 20 } // Waives the platform fee
-  };
+  const discountAmount = (itemTotal * discountPercent) / 100;
+  const discountedItemTotal = itemTotal - discountAmount;
+  const taxes = discountedItemTotal * 0.05;
+  const platformFeeAmount = itemTotal > 0 ? 20 : 0;
+  const toPay = Math.max(0, Math.round(discountedItemTotal + taxes + platformFeeAmount));
 
   const handleApplyPromo = () => {
     setPromoError('');
+    setPromoSuccess('');
     const code = promoInput.trim().toUpperCase();
 
     if (!code) return;
 
-    if (VALID_COUPONS[code]) {
-      const coupon = VALID_COUPONS[code];
-      let calculatedDiscount = 0;
-
-      if (coupon.type === 'percentage') {
-        calculatedDiscount = itemTotal * coupon.value;
-      } else if (coupon.type === 'flat') {
-        calculatedDiscount = coupon.value;
-      }
-
-      setDiscountAmount(calculatedDiscount);
-      setAppliedCode(code);
-      setDiscount(calculatedDiscount);
+    if (code === 'WELCOME10') {
+      setDiscountPercent(10);
+      setAppliedPromo('WELCOME10');
+      setPromoSuccess('Promo code WELCOME10 applied! 10% discount activated.');
+      setDiscount((itemTotal * 10) / 100);
+    } else if (code === 'FIRST10') {
+      setDiscountPercent(10);
+      setAppliedPromo('FIRST10');
+      setPromoSuccess('Promo code FIRST10 applied! 10% discount activated.');
+      setDiscount((itemTotal * 10) / 100);
+    } else if (code === 'FLAVORS20') {
+      setDiscountPercent(20);
+      setAppliedPromo('FLAVORS20');
+      setPromoSuccess('Promo code FLAVORS20 applied! 20% discount activated.');
+      setDiscount((itemTotal * 20) / 100);
     } else {
-      setPromoError('Invalid promo code. Try FIRST10!');
-      setDiscountAmount(0);
-      setAppliedCode('');
+      setPromoError('Invalid promo code');
+      setDiscountPercent(0);
+      setAppliedPromo(null);
       setDiscount(0);
     }
   };
 
-  const toPay = Math.max(0, Math.round(subtotal + gst + platformFee - discountAmount));
+  const handleRemovePromo = () => {
+    setPromoInput('');
+    setAppliedPromo(null);
+    setDiscountPercent(0);
+    setPromoError('');
+    setPromoSuccess('');
+    setDiscount(0);
+  };
 
   const handleMockRazorpaySuccess = (orderData) => {
     setShowMockRazorpayModal(false);
@@ -390,9 +400,10 @@ function Menu({ triggerToast }) {
       // Reset states
       clearCart();
       setPromoInput('');
-      setDiscountAmount(0);
-      setAppliedCode('');
+      setDiscountPercent(0);
+      setAppliedPromo(null);
       setPromoError('');
+      setPromoSuccess('');
       setPaymentMethod('');
       setShowPaymentModal(false);
       setShowCartDrawer(false);
@@ -434,9 +445,10 @@ function Menu({ triggerToast }) {
           // Reset cart and states
           clearCart();
           setPromoInput('');
-          setDiscountAmount(0);
-          setAppliedCode('');
+          setDiscountPercent(0);
+          setAppliedPromo(null);
           setPromoError('');
+          setPromoSuccess('');
           setPaymentMethod('');
           setShowPaymentModal(false);
           setShowCartDrawer(false);
@@ -509,9 +521,10 @@ function Menu({ triggerToast }) {
                 // Reset states
                 clearCart();
                 setPromoInput('');
-                setDiscountAmount(0);
-                setAppliedCode('');
+                setDiscountPercent(0);
+                setAppliedPromo(null);
                 setPromoError('');
+                setPromoSuccess('');
                 setPaymentMethod('');
                 setShowPaymentModal(false);
                 setShowCartDrawer(false);
@@ -792,20 +805,30 @@ function Menu({ triggerToast }) {
                     placeholder="Enter promo code"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    disabled={appliedCode !== ''}
+                    disabled={appliedPromo !== null}
                   />
-                  <button 
-                    className={`btn ${appliedCode !== '' ? 'btn-success text-white' : 'btn-warning text-dark'} fw-bold`}
-                    type="button"
-                    onClick={handleApplyPromo}
-                    disabled={appliedCode !== ''}
-                  >
-                    {appliedCode !== '' ? 'Applied' : 'Apply'}
-                  </button>
+                  {appliedPromo ? (
+                    <button 
+                      className="btn btn-danger text-white fw-bold"
+                      type="button"
+                      onClick={handleRemovePromo}
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn btn-warning text-dark fw-bold"
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={!promoInput.trim()}
+                    >
+                      Apply
+                    </button>
+                  )}
                 </div>
-                {appliedCode && (
+                {promoSuccess && (
                   <p className="mt-2 mb-0 small fw-bold text-success">
-                    Code {appliedCode} applied! -₹{discountAmount.toFixed(2)}
+                    {promoSuccess}
                   </p>
                 )}
                 {promoError && (
@@ -821,20 +844,20 @@ function Menu({ triggerToast }) {
                   <span>Item Total</span>
                   <span>₹{subtotal}</span>
                 </div>
+                {appliedPromo && (
+                  <div className="d-flex justify-content-between mb-2 text-success small fw-bold">
+                    <span>Promo Discount ({appliedPromo} - {discountPercent}% OFF)</span>
+                    <span>-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="d-flex justify-content-between mb-2 text-white-50 small">
                   <span>Taxes & Charges (5%)</span>
-                  <span>₹{gst.toFixed(2)}</span>
+                  <span>₹{taxes.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2 text-white-50 small">
                   <span>Platform Fee</span>
-                  <span>₹{platformFee.toFixed(2)}</span>
+                  <span>₹{platformFeeAmount.toFixed(2)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="d-flex justify-content-between mb-2 text-success small fw-bold">
-                    <span>Discount Applied</span>
-                    <span>-₹{Math.round(discountAmount)}</span>
-                  </div>
-                )}
                 
                 <hr className="border-secondary my-3" />
                 
@@ -855,9 +878,10 @@ function Menu({ triggerToast }) {
                   onClick={() => {
                     clearCart();
                     setPromoInput('');
-                    setDiscountAmount(0);
-                    setAppliedCode('');
+                    setDiscountPercent(0);
+                    setAppliedPromo(null);
                     setPromoError('');
+                    setPromoSuccess('');
                   }}
                 >
                   Clear Cart
