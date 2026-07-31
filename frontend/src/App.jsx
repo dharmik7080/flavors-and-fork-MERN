@@ -8,6 +8,7 @@ import Reservation from './pages/Reservation.jsx';
 import Analytics from './pages/Analytics.jsx';
 import AdminMenu from './pages/AdminMenu.jsx';
 import AdminReservations from './pages/AdminReservations.jsx';
+import AdminNewsletter from './pages/AdminNewsletter.jsx';
 import KitchenOrders from './components/KitchenOrders.jsx';
 import Login from './pages/Login.jsx';
 import { CartProvider } from './context/CartContext.jsx';
@@ -136,6 +137,14 @@ function App() {
                   element={
                     <AdminProtectedRoute>
                       <KitchenOrders />
+                    </AdminProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/newsletter" 
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminNewsletter triggerToast={triggerToast} />
                     </AdminProtectedRoute>
                   } 
                 />

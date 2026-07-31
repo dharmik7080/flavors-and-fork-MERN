@@ -85,6 +85,9 @@ function Navbar({ isDarkMode, toggleTheme }) {
                 <li className="nav-item">
                   <Link className={`nav-link ${location.pathname === '/admin/orders' ? 'active' : ''}`} to="/admin/orders">Kitchen Orders</Link>
                 </li>
+                <li className="nav-item">
+                  <Link className={`nav-link ${location.pathname === '/admin/newsletter' ? 'active' : ''}`} to="/admin/newsletter">Newsletter</Link>
+                </li>
               </>
             ) : (
               <>
