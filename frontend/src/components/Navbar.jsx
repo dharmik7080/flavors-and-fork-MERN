@@ -104,39 +104,41 @@ function Navbar({ isDarkMode, toggleTheme }) {
             )}
           </ul>
           <ul className="navbar-nav">
-            <li className="nav-item d-flex align-items-center">
-              {location.pathname === '/menu' ? (
-                <button 
-                  onClick={() => setShowCartDrawer(true)}
-                  className="btn nav-link position-relative text-white border-0 bg-transparent" 
-                  aria-label="Cart"
-                >
-                  <i className="bi bi-cart fs-5"></i>
-                  <span 
-                    id="cartBadge"
-                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                    style={{ display: totalItemsCount > 0 ? 'block' : 'none' }}
+            {!isAdmin && !isAdminPage && (
+              <li className="nav-item d-flex align-items-center">
+                {location.pathname === '/menu' ? (
+                  <button 
+                    onClick={() => setShowCartDrawer(true)}
+                    className="btn nav-link position-relative text-white border-0 bg-transparent" 
+                    aria-label="Cart"
                   >
-                    {totalItemsCount}
-                  </span>
-                </button>
-              ) : (
-                <Link 
-                  to="/menu"
-                  className="nav-link position-relative text-white" 
-                  aria-label="Cart"
-                >
-                  <i className="bi bi-cart fs-5"></i>
-                  <span 
-                    id="cartBadge"
-                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                    style={{ display: totalItemsCount > 0 ? 'block' : 'none' }}
+                    <i className="bi bi-cart fs-5"></i>
+                    <span 
+                      id="cartBadge"
+                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
+                      style={{ display: totalItemsCount > 0 ? 'block' : 'none' }}
+                    >
+                      {totalItemsCount}
+                    </span>
+                  </button>
+                ) : (
+                  <Link 
+                    to="/menu"
+                    className="nav-link position-relative text-white" 
+                    aria-label="Cart"
                   >
-                    {totalItemsCount}
-                  </span>
-                </Link>
-              )}
-            </li>
+                    <i className="bi bi-cart fs-5"></i>
+                    <span 
+                      id="cartBadge"
+                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
+                      style={{ display: totalItemsCount > 0 ? 'block' : 'none' }}
+                    >
+                      {totalItemsCount}
+                    </span>
+                  </Link>
+                )}
+              </li>
+            )}
             {user && isAdminPage && (
               <li className="nav-item d-flex align-items-center ms-3">
                 <button 
