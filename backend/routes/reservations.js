@@ -10,14 +10,15 @@ const userPass = process.env.EMAIL_PASS || 'lfkutelywvrpehgx';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for port 465, false for port 587
+  port: 587,
+  secure: false, // false for port 587 STARTTLS
   auth: {
     user: userEmail,
     pass: userPass
   },
   tls: {
-    rejectUnauthorized: false // bypass SSL verification failures if running on platforms with strict firewalls
+    rejectUnauthorized: false, // bypass SSL verification failures if running on platforms with strict firewalls
+    ciphers: 'SSLv3'
   },
   connectionTimeout: 5000,
   greetingTimeout: 5000,
@@ -146,27 +147,26 @@ router.post('/', async (req, res) => {
       `
     };
 
-    let emailSent = false;
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully! ->', info.response);
-      emailSent = true;
-    } catch (mailError) {
-      console.error("❌ Email failed on Vercel:", {
-        message: mailError.message,
-        code: mailError.code,
-        command: mailError.command,
-        stack: mailError.stack
-      });
-    }
-
-    // Return response payload matching your frontend expectations
+    // Return response payload matching your frontend expectations immediately
     res.status(201).json({
       status: 'success',
       message: 'Reservation confirmed successfully!',
       reservation: NewReservation,
-      tableId: NewReservation.tableId,
-      emailSent: emailSent
+      tableId: NewReservation.tableId
+    });
+
+    // Trigger email delivery asynchronously in the background
+    transporter.sendMail(mailOptions, (mailError, info) => {
+      if (mailError) {
+        console.error("❌ NODEMAILER FAILURE DETAILS:", {
+          message: mailError.message,
+          code: mailError.code,
+          command: mailError.command,
+          stack: mailError.stack
+        });
+      } else {
+        console.log('✅ NODEMAILER SUCCESS: Email sent ->', info.response);
+      }
     });
   } catch (error) {
     console.error('Reservation booking error:', error.message);
