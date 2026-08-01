@@ -2,9 +2,9 @@ import React from 'react';
 
 function MenuSkeleton() {
   return (
-    <div className="row" id="menu-skeleton-grid">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="col-md-4 mb-4">
+    <div className="row g-4" id="menu-skeleton-grid">
+      {[...Array(15)].map((_, i) => (
+        <div key={i} className="col-12 col-md-6 col-lg-4">
           <div 
             className="card h-100 border border-secondary bg-dark text-white rounded-4 overflow-hidden shimmer-card" 
             style={{ minHeight: '380px' }}
