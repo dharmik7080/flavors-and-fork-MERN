@@ -24,6 +24,21 @@ function Reservation({ triggerToast }) {
 
   const [bookingConfirmed, setBookingConfirmed] = useState(null);
   const [suggestedTable, setSuggestedTable] = useState('');
+  const [inspectTable, setInspectTable] = useState(null);
+
+  // Table metadata for the Inspect Modal
+  const TABLE_DETAILS = {
+    '1':  { zone: 'Window Views (Premium)', capacity: 2, config: 'Intimate window-side seating with panoramic street view. Perfect for couples.', icon: '🪟' },
+    '2':  { zone: 'Window Views (Premium)', capacity: 2, config: 'Corner window table with natural daylight. Ideal for business lunches.', icon: '🪟' },
+    '3':  { zone: 'Window Views (Premium)', capacity: 4, config: 'Extended window table with city skyline view. Great for small families.', icon: '🪟' },
+    '4':  { zone: 'Window Views (Premium)', capacity: 4, config: 'Premium window booth with ambient curtain lighting. Signature dining experience.', icon: '🪟' },
+    '5':  { zone: 'Main Dining Lounge', capacity: 4, config: 'Centrally located lounge table with vibrant atmosphere and open floor plan.', icon: '🍽️' },
+    '6':  { zone: 'Main Dining Lounge', capacity: 4, config: 'Spacious lounge table near the live music stage. Energetic dining environment.', icon: '🍽️' },
+    '7':  { zone: 'Main Dining Lounge', capacity: 6, config: 'Large round lounge table for group dining with lazy-susan service style.', icon: '🍽️' },
+    '8':  { zone: 'Main Dining Lounge', capacity: 6, config: 'Family-sized lounge table with extra legroom and accessible seating arrangements.', icon: '🍽️' },
+    '9':  { zone: 'Private Booths', capacity: 6, config: 'Curtained private booth with personalized service. Ideal for celebrations and meetings.', icon: '🎭' },
+    '10': { zone: 'Private Booths', capacity: 8, config: 'Exclusive large booth with semi-private partitions. Perfect for corporate events.', icon: '🎭' },
+  };
 
   // Read last_booked_table cookie on mount
   useEffect(() => {
@@ -238,14 +253,33 @@ function Reservation({ triggerToast }) {
     else if (zone === 'booth') zoneClass = 'zone-booth';
 
     return (
-      <div 
+      <div
         key={tableId}
         onClick={() => handleTableClick(tableId)}
-        className={`table-card ${stateClass} ${zoneClass}`}
+        className={`table-card ${stateClass} ${zoneClass} position-relative`}
       >
         Table #{tableId}
         {isBooked && (
           <div className="small fw-normal mt-1" style={{ fontSize: '0.8rem' }}>Booked</div>
+        )}
+        {isSelected && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setInspectTable(tableId); }}
+            className="btn btn-sm position-absolute"
+            style={{
+              top: '4px', right: '4px',
+              padding: '0 3px',
+              background: 'transparent',
+              border: 'none',
+              color: '#fcc203',
+              lineHeight: 1,
+              zIndex: 10
+            }}
+            title="Inspect Table Details"
+          >
+            <i className="bi bi-info-circle-fill" style={{ fontSize: '0.85rem' }}></i>
+          </button>
         )}
       </div>
     );
@@ -425,6 +459,97 @@ function Reservation({ triggerToast }) {
           </div>
         </div>
       )}
+
+      {/* ── Inspect Table Details Modal ── */}
+      {inspectTable && (() => {
+        const details = TABLE_DETAILS[inspectTable];
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              className="modal-backdrop fade show"
+              style={{ zIndex: 1055 }}
+              onClick={() => setInspectTable(null)}
+            />
+            {/* Modal */}
+            <div
+              className="modal fade show d-block"
+              tabIndex="-1"
+              role="dialog"
+              style={{ zIndex: 1060 }}
+            >
+              <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '440px' }}>
+                <div className="modal-content bg-dark border border-warning text-white rounded-4 shadow-lg overflow-hidden">
+
+                  {/* Header */}
+                  <div className="modal-header border-bottom border-secondary px-4 py-3 d-flex align-items-center gap-2">
+                    <span style={{ fontSize: '1.6rem' }}>{details.icon}</span>
+                    <div>
+                      <h5 className="modal-title fw-bold text-warning font-serif mb-0">
+                        Table #{inspectTable}
+                      </h5>
+                      <small className="text-white-50">{details.zone}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white ms-auto"
+                      onClick={() => setInspectTable(null)}
+                      aria-label="Close"
+                    />
+                  </div>
+
+                  {/* Body */}
+                  <div className="modal-body px-4 py-4">
+                    <div className="d-flex flex-column gap-3">
+
+                      <div className="d-flex align-items-start gap-3 p-3 rounded-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <i className="bi bi-people-fill text-warning fs-5 mt-1"></i>
+                        <div>
+                          <div className="fw-bold text-white-75 small text-uppercase" style={{ letterSpacing: '0.05em' }}>Seating Capacity</div>
+                          <div className="text-white fw-bold fs-5">{details.capacity} Guests</div>
+                        </div>
+                      </div>
+
+                      <div className="d-flex align-items-start gap-3 p-3 rounded-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <i className="bi bi-geo-alt-fill text-warning fs-5 mt-1"></i>
+                        <div>
+                          <div className="fw-bold text-white-75 small text-uppercase" style={{ letterSpacing: '0.05em' }}>Zone Location</div>
+                          <div className="text-white fw-bold">{details.zone}</div>
+                        </div>
+                      </div>
+
+                      <div className="d-flex align-items-start gap-3 p-3 rounded-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <i className="bi bi-card-text text-warning fs-5 mt-1"></i>
+                        <div>
+                          <div className="fw-bold text-white-75 small text-uppercase" style={{ letterSpacing: '0.05em' }}>Configuration</div>
+                          <div className="text-white-50" style={{ lineHeight: '1.5' }}>{details.config}</div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="modal-footer border-top border-secondary px-4 py-3">
+                    <span className="text-success small me-auto">
+                      <i className="bi bi-check-circle-fill me-1"></i>Currently Selected
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-warning text-dark fw-bold rounded-pill px-4"
+                      onClick={() => setInspectTable(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
     </div>
   );
 }
