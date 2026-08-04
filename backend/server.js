@@ -12,6 +12,7 @@ import orderRouter from './routes/order.js';
 import reservationsRouter from './routes/reservations.js';
 import newsletterRouter from './routes/newsletter.js';
 import paymentRouter from './routes/paymentRoutes.js';
+import locksRouter from './routes/locks.js';
 
 import User from './models/User.js';
 
@@ -78,6 +79,7 @@ app.use('/api/orders', orderRouter);
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/newsletter', newsletterRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/locks', locksRouter);
 
 // Basic API Check Route
 app.get('/api/status', (req, res) => {

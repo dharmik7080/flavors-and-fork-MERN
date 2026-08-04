@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { CartContext } from '../context/CartContext.jsx';
+import FloorMap from '../components/FloorMap.jsx';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
@@ -91,9 +92,18 @@ function Reservation({ triggerToast }) {
     });
   }, [formData.date, formData.timeSlot]);
 
-  // Update table grid when selected date changes
-  const handleDateChange = (e) => {
+  // Update table grid when selected date changes and release previous lock
+  const handleDateChange = async (e) => {
     const newDate = e.target.value;
+    
+    if (selectedTable) {
+      try {
+        await axios.post('/api/locks/release-lock', { tableId: selectedTable });
+      } catch (releaseErr) {
+        console.warn('Failed to release previous table lock on date change:', releaseErr.message);
+      }
+    }
+
     setFormData({ ...formData, date: newDate, tableId: '' });
     setSelectedTable(''); // Reset selection
     
@@ -125,14 +135,10 @@ function Reservation({ triggerToast }) {
     }
   };
 
-  const handleTableClick = (tableNum) => {
-    const tableId = String(tableNum);
-    if (bookedTables.includes(tableId)) {
-      return; // Table is booked, prevent click
-    }
-    setSelectedTable(tableId);
-    setFormData((prev) => ({ ...prev, tableId }));
-  };
+  // Update formData when selectedTable changes via FloorMap locking
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, tableId: selectedTable }));
+  }, [selectedTable]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -212,6 +218,14 @@ function Reservation({ triggerToast }) {
       });
 
       triggerToast(`Table #${response.data.tableId} successfully reserved live!`);
+      
+      // Release table lock on backend on successful booking checkout
+      try {
+        await axios.post('/api/locks/release-lock', { tableId: selectedTable });
+      } catch (releaseErr) {
+        console.warn('Failed to release lock on booking checkout success:', releaseErr.message);
+      }
+
       setSelectedTable('');
       clearCart();
     } catch (err) {
@@ -238,55 +252,8 @@ function Reservation({ triggerToast }) {
     setFormErrors({ phone: '', date: '' });
   };
 
-  const renderTableCard = (tableNum, zone) => {
-    const tableId = String(tableNum);
-    const isBooked = bookedTables.includes(tableId);
-    const isSelected = selectedTable === tableId;
-
-    let stateClass = 'available';
-    if (isBooked) stateClass = 'booked';
-    else if (isSelected) stateClass = 'selected';
-
-    let zoneClass = '';
-    if (zone === 'window') zoneClass = 'zone-window';
-    else if (zone === 'lounge') zoneClass = 'zone-lounge';
-    else if (zone === 'booth') zoneClass = 'zone-booth';
-
-    return (
-      <div
-        key={tableId}
-        onClick={() => handleTableClick(tableId)}
-        className={`table-card ${stateClass} ${zoneClass} position-relative`}
-      >
-        Table #{tableId}
-        {isBooked && (
-          <div className="small fw-normal mt-1" style={{ fontSize: '0.8rem' }}>Booked</div>
-        )}
-        {isSelected && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setInspectTable(tableId); }}
-            className="btn btn-sm position-absolute"
-            style={{
-              top: '4px', right: '4px',
-              padding: '0 3px',
-              background: 'transparent',
-              border: 'none',
-              color: '#fcc203',
-              lineHeight: 1,
-              zIndex: 10
-            }}
-            title="Inspect Table Details"
-          >
-            <i className="bi bi-info-circle-fill" style={{ fontSize: '0.85rem' }}></i>
-          </button>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <div className="reservation-viewport container my-5 text-white">
+    <div className="reservation-viewport container mt-5 pt-5 mb-5 text-white">
       <h2 className="text-center mb-5 font-serif h1 text-warning">Book a Table</h2>
       
       {!bookingConfirmed ? (
@@ -305,42 +272,18 @@ function Reservation({ triggerToast }) {
           <div className="row">
             {/* Left Column: Visual Table Selector */}
             <div className="col-md-6 mb-5 mb-md-0 p-4 bg-dark border border-secondary rounded-4 shadow-sm">
-            <h3 className="mb-4 font-serif text-warning">Select a Table</h3>
-            
-            {/* Seating Layout Groups */}
-            <div className="seating-layout-container d-flex flex-column gap-3">
-              {/* Window Views Section */}
-              <div className="seating-section">
-                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
-                  <i className="bi bi-window-sidebar text-warning"></i> WINDOW VIEWS (PREMIUM)
-                </h5>
-                <div className="seating-grid-row gap-4">
-                  {[1, 2, 3, 4].map((num) => renderTableCard(num, 'window'))}
-                </div>
-              </div>
-
-              {/* Main Lounge Section */}
-              <div className="seating-section">
-                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
-                  <i className="bi bi-house-door text-warning"></i> MAIN DINING LOUNGE
-                </h5>
-                <div className="seating-grid-row gap-4">
-                  {[5, 6, 7, 8].map((num) => renderTableCard(num, 'lounge'))}
-                </div>
-              </div>
-
-              {/* Private Booths Section */}
-              <div className="seating-section">
-                <h5 className="text-white-50 mb-3 fs-6 font-serif d-flex align-items-center gap-2" style={{ letterSpacing: '1px', opacity: 0.8 }}>
-                  <i className="bi bi-bookmark-star text-warning"></i> PRIVATE BOOTHS
-                </h5>
-                <div className="booth-grid-row gap-4">
-                  {[9, 10].map((num) => renderTableCard(num, 'booth'))}
-                </div>
-              </div>
+              <h3 className="mb-4 font-serif text-warning">Select a Table</h3>
+              
+              <FloorMap 
+                selectedTable={selectedTable}
+                setSelectedTable={setSelectedTable}
+                bookedTables={bookedTables}
+                triggerToast={triggerToast}
+                onInspect={setInspectTable}
+              />
+              
+              <p className="text-center mt-3 text-white-50 small">Click an available table to select it for reservation.</p>
             </div>
-            <p className="text-center mt-3 text-white-50 small">Click an available table to select it for reservation.</p>
-          </div>
 
           {/* Right Column: Booking Form */}
           <div className="col-md-6 p-4 bg-dark border border-secondary rounded-4 shadow-sm">
