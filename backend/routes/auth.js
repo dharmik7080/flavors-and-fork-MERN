@@ -6,10 +6,10 @@ const router = express.Router();
 // POST /api/auth/register - Register a new user with validation checks
 router.post('/register', async (req, res) => {
   try {
-    const { name, surname, email, password, city } = req.body;
+    const { name, surname, email, password } = req.body;
     
     // Instantiate new User to run validation rules
-    const newUser = new User({ name, surname, email, password, city });
+    const newUser = new User({ name, surname, email, password });
     await newUser.save();
     
     res.status(201).json({
@@ -19,8 +19,7 @@ router.post('/register', async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         surname: newUser.surname,
-        email: newUser.email,
-        city: newUser.city
+        email: newUser.email
       }
     });
   } catch (error) {
@@ -150,7 +149,6 @@ router.post('/login', async (req, res) => {
       name: user.name,
       surname: user.surname,
       email: user.email,
-      city: user.city,
       isAdmin,
       role: isAdmin ? 'admin' : 'user'
     };

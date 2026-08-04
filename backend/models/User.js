@@ -18,10 +18,7 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     maxlength: 12
   },
-  city: {
-    type: String,
-    enum: ['baroda', 'surat', 'ahmedabad']
-  },
+
   role: {
     type: String,
     default: 'user'

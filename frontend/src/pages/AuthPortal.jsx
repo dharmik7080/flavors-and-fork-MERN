@@ -26,7 +26,6 @@ function AuthPortal() {
   const [regSurname, setRegSurname] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regCity, setRegCity] = useState('');
 
   const handlePostAuthRedirect = (loggedUser) => {
     setUser(loggedUser);
@@ -90,7 +89,7 @@ function AuthPortal() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!regName || !regSurname || !regEmail || !regPassword || !regCity) {
+    if (!regName || !regSurname || !regEmail || !regPassword) {
       setErrorMsg('Please fill in all the registration fields.');
       return;
     }
@@ -101,8 +100,7 @@ function AuthPortal() {
         name: regName,
         surname: regSurname,
         email: regEmail,
-        password: regPassword,
-        city: regCity
+        password: regPassword
       });
 
       if (regRes.data.status === 'success') {
@@ -270,17 +268,7 @@ function AuthPortal() {
               />
             </div>
 
-            <div className="mb-3">
-              <label className="form-label fw-bold text-white-50 fs-7">City</label>
-              <input 
-                type="text" 
-                className="form-control bg-dark border-secondary text-white" 
-                value={regCity}
-                onChange={(e) => setRegCity(e.target.value)}
-                placeholder="Mumbai"
-                required
-              />
-            </div>
+
 
             <div className="mb-4">
               <label className="form-label fw-bold text-white-50 fs-7">Password</label>
