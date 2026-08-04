@@ -4,12 +4,18 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 function Login() {
-  const { setUser } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (user && (user._id || user.id || user.email)) {
+      navigate(user.isAdmin || user.role === 'admin' ? '/admin/menu' : '/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

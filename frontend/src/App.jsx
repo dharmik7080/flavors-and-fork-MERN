@@ -11,6 +11,7 @@ import AdminReservations from './pages/AdminReservations.jsx';
 import AdminNewsletter from './pages/AdminNewsletter.jsx';
 import KitchenOrders from './components/KitchenOrders.jsx';
 import Login from './pages/Login.jsx';
+import AuthPortal from './pages/AuthPortal.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { AdminProtectedRoute } from './components/ProtectedRoute.jsx';
@@ -107,6 +108,7 @@ function App() {
                   element={<Menu triggerToast={triggerToast} />} 
                 />
                 <Route path="/reservation" element={<Reservation triggerToast={triggerToast} />} />
+                <Route path="/login" element={<AuthPortal />} />
                 <Route path="/admin-login" element={<Login />} />
                 <Route 
                   path="/analytics" 
