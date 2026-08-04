@@ -54,8 +54,28 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const requireAuth = (actionCallback, actionData = null, navigate) => {
+    if (user && (user._id || user.id)) {
+      actionCallback();
+      return true;
+    } else {
+      if (actionData) {
+        sessionStorage.setItem('pendingAction', JSON.stringify({
+          ...actionData,
+          pathname: window.location.pathname
+        }));
+      }
+      if (navigate) {
+        navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      } else {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, logout, requireAuth }}>
       {children}
     </AuthContext.Provider>
   );

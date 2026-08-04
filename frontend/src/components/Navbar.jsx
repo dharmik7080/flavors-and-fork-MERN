@@ -139,15 +139,41 @@ function Navbar({ isDarkMode, toggleTheme }) {
                 )}
               </li>
             )}
-            {user && isAdminPage && (
+            {user ? (
+              <>
+                <li className="nav-item d-flex align-items-center ms-3">
+                  <div className="d-flex align-items-center gap-2">
+                    <span 
+                      className="badge bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                      style={{ width: '30px', height: '30px', fontSize: '0.85rem' }}
+                      title={user.email}
+                    >
+                      {user.name ? user.name[0].toUpperCase() : 'U'}
+                    </span>
+                    <span className="text-white-50 small d-none d-sm-inline" style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.name}
+                    </span>
+                  </div>
+                </li>
+                <li className="nav-item d-flex align-items-center ms-2">
+                  <button 
+                    onClick={handleLogout} 
+                    className="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 bg-transparent"
+                    style={{ fontSize: '0.85rem', fontWeight: '600' }}
+                  >
+                    Logout
+                  </button>
+                </li>
+              </>
+            ) : (
               <li className="nav-item d-flex align-items-center ms-3">
-                <button 
-                  onClick={handleLogout} 
-                  className="btn border border-danger text-danger rounded-pill px-3 py-1 bg-transparent"
-                  style={{ fontSize: '0.9rem', fontWeight: '600' }}
+                <Link 
+                  to="/login"
+                  className="btn btn-outline-warning btn-sm rounded-pill px-3 py-1"
+                  style={{ fontSize: '0.85rem', fontWeight: '600' }}
                 >
-                  Logout
-                </button>
+                  Log In
+                </Link>
               </li>
             )}
             <li className="nav-item d-flex align-items-center ms-3">

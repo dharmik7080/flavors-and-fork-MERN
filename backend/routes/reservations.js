@@ -1,6 +1,7 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
 import Reservation from '../models/Reservation.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ router.get('/availability', async (req, res) => {
 });
 
 // POST /api/reservations - Create reservation and trigger email confirmation
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { name, phone, email, date, timeSlot, tableId, guestCount, preOrderItems, grandTotal } = req.body;
 

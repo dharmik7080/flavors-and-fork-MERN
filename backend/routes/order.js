@@ -2,6 +2,7 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import Dish from '../models/Dish.js';
 import Order from '../models/Order.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -105,7 +106,7 @@ async function sendOrderEmail(email, items, grandTotal) {
 }
 
 // POST /api/orders/checkout - Handle order checkouts and send confirmation email invoice
-router.post('/checkout', async (req, res) => {
+router.post('/checkout', authMiddleware, async (req, res) => {
   const { email, items, grandTotal } = req.body;
 
   if (!email) {

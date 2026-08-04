@@ -1,10 +1,12 @@
 import express from 'express';
 import TableLock from '../models/TableLock.js';
 
+import authMiddleware from '../middleware/authMiddleware.js';
+
 const router = express.Router();
 
 // POST /api/locks/lock-table - Lock a table for 5 minutes
-router.post('/lock-table', async (req, res) => {
+router.post('/lock-table', authMiddleware, async (req, res) => {
   try {
     const { tableId } = req.body;
     const userId = req.session?.user?._id || req.body.lockedBy || req.body.userId;
@@ -20,7 +22,10 @@ router.post('/lock-table', async (req, res) => {
     // 1. Clean up any expired locks first (expiresAt <= current date)
     await TableLock.deleteMany({ expiresAt: { $lte: new Date() } });
 
-    // 2. Try to acquire the table lock for 5 minutes
+    // 2. Auto-release any previous tables locked by this same user to enforce a 1-lock-per-session limit
+    await TableLock.deleteMany({ lockedBy: userId });
+
+    // 3. Try to acquire the table lock for 5 minutes
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     
     const lock = await TableLock.create({

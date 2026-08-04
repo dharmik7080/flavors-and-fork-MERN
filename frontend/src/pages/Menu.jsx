@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { CartContext } from '../context/CartContext.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 import MenuSkeleton from '../components/MenuSkeleton.jsx';
 
 // Static menu data fallback (exact 15 items from menu.json)
@@ -243,6 +245,20 @@ function Menu({ triggerToast }) {
     grandTotal
   } = useContext(CartContext);
 
+  const { user, requireAuth } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleAddToCartSecure = (dish) => {
+    requireAuth(
+      () => {
+        addToCart(dish);
+        triggerToast(`🛒 Added ${dish.name} to cart!`);
+      },
+      { type: 'ADD_TO_CART', payload: dish },
+      navigate
+    );
+  };
+
   const [menuItems, setMenuItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -272,6 +288,29 @@ function Menu({ triggerToast }) {
     const savedFavs = JSON.parse(localStorage.getItem('favorites')) || [];
     setFavorites(savedFavs);
   }, []);
+
+  // Handle recovery of pending actions (lazy authentication completion)
+  useEffect(() => {
+    if (!user || !(user._id || user.id)) return;
+    const pending = sessionStorage.getItem('pendingAction');
+    if (pending) {
+      try {
+        const parsed = JSON.parse(pending);
+        if (parsed.pathname === window.location.pathname) {
+          if (parsed.type === 'ADD_TO_CART') {
+            addToCart(parsed.payload);
+            triggerToast(`🛒 Added ${parsed.payload.name} to cart!`);
+          } else if (parsed.type === 'CHECKOUT') {
+            setShowCartDrawer(true);
+            setShowPaymentModal(true);
+          }
+          sessionStorage.removeItem('pendingAction');
+        }
+      } catch (e) {
+        console.error('Failed to restore pending actions:', e);
+      }
+    }
+  }, [user]);
 
   // Fetch Dishes from API using axios, supporting live query/category searching via Express API
   useEffect(() => {
@@ -708,7 +747,7 @@ function Menu({ triggerToast }) {
                   favorites={favorites}
                   toggleFavorite={toggleFavorite}
                   removeFromCart={removeFromCart}
-                  addToCart={addToCart}
+                  addToCart={handleAddToCartSecure}
                 />
               ))
             )}
@@ -783,7 +822,7 @@ function Menu({ triggerToast }) {
                       <button className="btn btn-sm btn-outline-danger" onClick={() => removeFromCart(item.id)}>
                         <i className="bi bi-dash"></i>
                       </button>
-                      <button className="btn btn-sm btn-outline-success" onClick={() => addToCart(item)}>
+                      <button className="btn btn-sm btn-outline-success" onClick={() => handleAddToCartSecure(item)}>
                         <i className="bi bi-plus"></i>
                       </button>
                     </div>
@@ -868,7 +907,13 @@ function Menu({ triggerToast }) {
                 
                 <button 
                   className="btn btn-warning w-100 py-3 fw-bold rounded-pill" 
-                  onClick={() => setShowPaymentModal(true)}
+                  onClick={() => {
+                    requireAuth(
+                      () => setShowPaymentModal(true),
+                      { type: 'CHECKOUT', payload: null },
+                      navigate
+                    );
+                  }}
                 >
                   Place Order <i className="bi bi-arrow-right-circle-fill ms-2"></i>
                 </button>

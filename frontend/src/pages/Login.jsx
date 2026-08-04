@@ -25,11 +25,34 @@ function Login() {
       const response = await axios.post('/api/auth/login', { email, password });
       
       if (response.data && response.data.user) {
-        setUser(response.data.user);
+        const loggedUser = response.data.user;
+        setUser(loggedUser);
         // Persist local fallback session for reliability
-        localStorage.setItem('flavorsAndForkUser', JSON.stringify(response.data.user));
+        localStorage.setItem('flavorsAndForkUser', JSON.stringify(loggedUser));
         
-        navigate('/admin/menu');
+        // Handle post-login redirection for lazy authentication triggers
+        const queryParams = new URLSearchParams(window.location.search);
+        const urlRedirect = queryParams.get('redirect');
+        const pendingAction = sessionStorage.getItem('pendingAction');
+
+        if (pendingAction) {
+          try {
+            const parsedAction = JSON.parse(pendingAction);
+            if (parsedAction.pathname) {
+              navigate(parsedAction.pathname);
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to parse pendingAction:', e);
+          }
+        }
+
+        if (urlRedirect) {
+          navigate(urlRedirect);
+        } else {
+          // Standard role-based access routing
+          navigate(loggedUser.isAdmin || loggedUser.role === 'admin' ? '/admin/menu' : '/');
+        }
       } else {
         throw new Error('Authentication succeeded but user data is missing.');
       }

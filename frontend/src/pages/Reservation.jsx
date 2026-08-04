@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { CartContext } from '../context/CartContext.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 import FloorMap from '../components/FloorMap.jsx';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
+  const { user, requireAuth } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [selectedTable, setSelectedTable] = useState('');
   const [bookings, setBookings] = useState({});
   const [bookedTables, setBookedTables] = useState([]);
@@ -140,8 +145,32 @@ function Reservation({ triggerToast }) {
     setFormData(prev => ({ ...prev, tableId: selectedTable }));
   }, [selectedTable]);
 
+  // Handle recovery of pending booking actions after successful login
+  useEffect(() => {
+    if (!user || !(user._id || user.id)) return;
+    const pending = sessionStorage.getItem('pendingAction');
+    if (pending) {
+      try {
+        const parsed = JSON.parse(pending);
+        if (parsed.type === 'BOOK_TABLE' && parsed.pathname === window.location.pathname) {
+          const { tableId, formData: savedForm } = parsed.payload;
+          setSelectedTable(tableId);
+          setFormData(prev => ({
+            ...prev,
+            ...savedForm,
+            tableId
+          }));
+          triggerToast(`✨ Restored your table #${tableId} reservation intent.`);
+          sessionStorage.removeItem('pendingAction');
+        }
+      } catch (e) {
+        console.error('Failed to restore pending booking intent:', e);
+      }
+    }
+  }, [user]);
+
   const handleBookingSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     // Validations
     if (!selectedTable) {
@@ -149,92 +178,102 @@ function Reservation({ triggerToast }) {
       return;
     }
 
-    const inputDate = new Date(formData.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    requireAuth(
+      async () => {
+        const inputDate = new Date(formData.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-    if (inputDate < today) {
-      setFormErrors((prev) => ({ ...prev, date: 'Please select today or a future date.' }));
-      return;
-    }
+        if (inputDate < today) {
+          setFormErrors((prev) => ({ ...prev, date: 'Please select today or a future date.' }));
+          return;
+        }
 
-    if (formData.phone.length !== 10) {
-      setFormErrors((prev) => ({ ...prev, phone: 'Phone number must be exactly 10 digits.' }));
-      return;
-    }
+        if (formData.phone.length !== 10) {
+          setFormErrors((prev) => ({ ...prev, phone: 'Phone number must be exactly 10 digits.' }));
+          return;
+        }
 
-    if (formData.guestCount < 1 || formData.guestCount > 20) {
-      alert('Guests must be between 1 and 20.');
-      return;
-    }
+        if (formData.guestCount < 1 || formData.guestCount > 20) {
+          alert('Guests must be between 1 and 20.');
+          return;
+        }
 
-    // Double check bookings
-    if (bookedTables.includes(selectedTable)) {
-      alert('This table is already booked for this specific time slot!');
-      return;
-    }
+        // Double check bookings
+        if (bookedTables.includes(selectedTable)) {
+          alert('This table is already booked for this specific time slot!');
+          return;
+        }
 
-    // Dispatch POST request to backend
-    const originalBtn = e.target.querySelector('button[type="submit"]');
-    originalBtn.disabled = true;
-    originalBtn.innerText = 'Processing...';
+        // Dispatch POST request to backend
+        const originalBtn = e && e.target ? e.target.querySelector('button[type="submit"]') : document.querySelector('button[type="submit"]');
+        if (originalBtn) {
+          originalBtn.disabled = true;
+          originalBtn.innerText = 'Processing...';
+        }
 
-    const payload = {
-      ...formData,
-      tableId: selectedTable,
-      preOrderItems: cart.map(item => ({
-        menuItemId: item._id || item.id,
-        name: item.name,
-        quantity: item.qty || item.quantity || 1,
-        price: item.price
-      })),
-      grandTotal: cart.reduce((total, item) => total + (item.price * (item.qty || 1)), 0)
-    };
+        const payload = {
+          ...formData,
+          tableId: selectedTable,
+          preOrderItems: cart.map(item => ({
+            menuItemId: item._id || item.id,
+            name: item.name,
+            quantity: item.qty || item.quantity || 1,
+            price: item.price
+          })),
+          grandTotal: cart.reduce((total, item) => total + (item.price * (item.qty || 1)), 0)
+        };
 
-    try {
-      const response = await axios.post('/api/reservations', payload);
+        try {
+          const response = await axios.post('/api/reservations', payload);
 
-      // Mark Table as Booked and persist in LocalStorage with compound key
-      const key = `${formData.date}_${formData.timeSlot}`;
-      const updatedBookings = { ...bookings };
-      if (!updatedBookings[key]) {
-        updatedBookings[key] = [];
-      }
-      updatedBookings[key].push(selectedTable);
+          // Mark Table as Booked and persist in LocalStorage with compound key
+          const key = `${formData.date}_${formData.timeSlot}`;
+          const updatedBookings = { ...bookings };
+          if (!updatedBookings[key]) {
+            updatedBookings[key] = [];
+          }
+          updatedBookings[key].push(selectedTable);
 
-      setBookings(updatedBookings);
-      localStorage.setItem('restaurantBookings', JSON.stringify(updatedBookings));
+          setBookings(updatedBookings);
+          localStorage.setItem('restaurantBookings', JSON.stringify(updatedBookings));
 
-      // Update local bookedTables state
-      setBookedTables((prev) => [...prev, selectedTable]);
+          // Update local bookedTables state
+          setBookedTables((prev) => [...prev, selectedTable]);
 
-      // Trigger Confirmed Summary view
-      setBookingConfirmed({
-        name: formData.name,
-        table: selectedTable,
-        date: formData.date,
-        timeSlot: formData.timeSlot,
-        guests: formData.guestCount
-      });
+          // Trigger Confirmed Summary view
+          setBookingConfirmed({
+            name: formData.name,
+            table: selectedTable,
+            date: formData.date,
+            timeSlot: formData.timeSlot,
+            guests: formData.guestCount
+          });
 
-      triggerToast(`Table #${response.data.tableId} successfully reserved live!`);
-      
-      // Release table lock on backend on successful booking checkout
-      try {
-        await axios.post('/api/locks/release-lock', { tableId: selectedTable });
-      } catch (releaseErr) {
-        console.warn('Failed to release lock on booking checkout success:', releaseErr.message);
-      }
+          triggerToast(`Table #${response.data.tableId} successfully reserved live!`);
+          
+          // Release table lock on backend on successful booking checkout
+          try {
+            await axios.post('/api/locks/release-lock', { tableId: selectedTable });
+          } catch (releaseErr) {
+            console.warn('Failed to release lock on booking checkout success:', releaseErr.message);
+          }
 
-      setSelectedTable('');
-      clearCart();
-    } catch (err) {
-      console.error('Reservation API error:', err);
-      alert('Failed to process reservation booking: ' + (err.response?.data?.error || err.message));
-    } finally {
-      originalBtn.disabled = false;
-      originalBtn.innerText = 'Confirm Booking';
-    }
+          setSelectedTable('');
+          clearCart();
+        } catch (err) {
+          console.error('Reservation API error:', err);
+          alert('Failed to process reservation booking: ' + (err.response?.data?.error || err.message));
+        } finally {
+          if (originalBtn) {
+            originalBtn.disabled = false;
+            originalBtn.innerText = 'Confirm Booking';
+          }
+        }
+      },
+      { type: 'BOOK_TABLE', payload: { tableId: selectedTable, formData } },
+      navigate
+    );
   };
 
   const handleBookAnother = () => {
