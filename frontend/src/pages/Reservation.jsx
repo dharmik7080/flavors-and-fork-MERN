@@ -123,12 +123,14 @@ function Reservation({ triggerToast }) {
     return () => clearInterval(interval);
   }, [formData.date, formData.timeSlot]);
 
-  // Helper to get user ID reliably from context or localStorage fallback
+  // Helper to get user ID reliably from context or localStorage fallback — always returns a plain string
   const getUserId = () => {
-    if (user && (user._id || user.id)) return user._id || user.id;
+    const fromContext = user && (user._id || user.id);
+    if (fromContext) return String(fromContext);
     try {
       const stored = JSON.parse(localStorage.getItem('flavorsAndForkUser') || '{}');
-      return stored._id || stored.id || null;
+      const fromStorage = stored._id || stored.id;
+      return fromStorage ? String(fromStorage) : null;
     } catch { return null; }
   };
 

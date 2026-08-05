@@ -7,12 +7,14 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks =
 
   const handleTableClick = (tableId) => {
     if (bookedTables.includes(tableId)) {
-      return; // Table is permanently booked
+      return;
     }
 
-    const currentUserId = user ? (user._id || user.id) : null;
+    // Normalize to string to avoid ObjectId vs string comparison bugs
+    const currentUserId = user ? String(user._id || user.id || '') : '';
     const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
-    const isLockedByOther = currentLock && currentLock.lockedBy !== currentUserId;
+    const isLockedByOther = currentLock && currentUserId &&
+      String(currentLock.lockedBy) !== currentUserId;
 
     if (isLockedByOther) {
       triggerToast('❌ This table is locked by another customer. Please select another table.');
@@ -26,12 +28,14 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks =
     const tableId = String(tableNum);
     const isBooked = bookedTables.includes(tableId);
     
-    // Determine locks state
-    const currentUserId = user ? (user._id || user.id) : null;
+    // Normalize to string to avoid ObjectId vs string comparison bugs
+    const currentUserId = user ? String(user._id || user.id || '') : '';
     const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
     
-    const isLockedByMe = selectedTable === tableId || (currentLock && currentLock.lockedBy === currentUserId);
-    const isLockedByOther = currentLock && currentLock.lockedBy !== currentUserId;
+    const isLockedByMe = selectedTable === tableId || 
+      (currentLock && currentUserId && String(currentLock.lockedBy) === currentUserId);
+    const isLockedByOther = currentLock && currentUserId && 
+      String(currentLock.lockedBy) !== currentUserId;
 
     let stateClass = 'available';
     if (isBooked) stateClass = 'booked';
