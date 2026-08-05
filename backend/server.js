@@ -17,6 +17,7 @@ import locksRouter from './routes/locks.js';
 import User from './models/User.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5001;
 
 // Connect to Database and Seed Admin User
@@ -57,12 +58,15 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.PORT;
+
 app.use(session({
   secret: 'flavors_and_fork_secret_vibe_key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true in production if running HTTPS
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
