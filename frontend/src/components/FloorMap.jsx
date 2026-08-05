@@ -66,56 +66,61 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, triggerToast,
     }
 
     if (isLockedByMe) {
-      // Release lock
-      try {
-        await axios.post('/api/locks/release-lock', {
-          tableId,
-          userId
-        });
-        setSelectedTable('');
-        triggerToast(`🔓 Table #${tableId} lock released.`);
-      } catch (err) {
-        console.error('Failed to release lock:', err);
-        triggerToast('❌ Failed to release table lock. Please try again.');
+      // Release lock locally
+      setSelectedTable('');
+      
+      // Silently release on backend in background only if logged in
+      if (user) {
+        try {
+          await axios.post('/api/locks/release-lock', {
+            tableId,
+            userId
+          });
+        } catch (err) {
+          console.warn('Failed to release lock silently:', err.message);
+        }
       }
     } else {
-      // Try to acquire lock on the new table
-      try {
-        // If the user already had another table selected, release that lock first
-        if (selectedTable) {
-          try {
-            await axios.post('/api/locks/release-lock', {
-              tableId: selectedTable,
-              userId
-            });
-          } catch (releaseErr) {
-            console.warn('Failed to release previous table lock:', releaseErr.message);
+      // Select new table locally
+      setSelectedTable(tableId);
+
+      // Perform backend lock operations silently only if logged in
+      if (user) {
+        try {
+          // If the user already had another table selected, release that lock first silently
+          if (selectedTable) {
+            try {
+              await axios.post('/api/locks/release-lock', {
+                tableId: selectedTable,
+                userId
+              });
+            } catch (releaseErr) {
+              console.warn('Failed to release previous table lock:', releaseErr.message);
+            }
           }
-        }
 
-        // Acquire new lock
-        const response = await axios.post('/api/locks/lock-table', {
-          tableId,
-          userId
-        });
+          // Acquire new lock
+          const response = await axios.post('/api/locks/lock-table', {
+            tableId,
+            userId
+          });
 
-        if (response.data.success) {
-          setSelectedTable(tableId);
-          triggerToast(`🔒 Table #${tableId} successfully locked for 5 minutes!`);
-          
-          // Instantly refresh locks list to reflect locally
-          const updatedLocks = await axios.get('/api/locks/active-locks');
-          setActiveLocks(updatedLocks.data || []);
-        }
-      } catch (err) {
-        if (err.response?.status === 409) {
-          triggerToast('❌ Conflict: This table was just locked by another customer!');
-          // Refresh list to show updated status
-          const updatedLocks = await axios.get('/api/locks/active-locks');
-          setActiveLocks(updatedLocks.data || []);
-        } else {
-          console.error('Lock acquisition error:', err);
-          triggerToast(err.response?.data?.error || '❌ Failed to lock table. Please try again.');
+          if (response.data.success) {
+            // Instantly refresh locks list to reflect locally
+            const updatedLocks = await axios.get('/api/locks/active-locks');
+            setActiveLocks(updatedLocks.data || []);
+          }
+        } catch (err) {
+          if (err.response?.status === 409) {
+            triggerToast('❌ Conflict: This table was just locked by another customer!');
+            // Refresh list to show updated status
+            const updatedLocks = await axios.get('/api/locks/active-locks');
+            setActiveLocks(updatedLocks.data || []);
+            // De-select locally since it's locked by other
+            setSelectedTable('');
+          } else {
+            console.warn('Silent lock acquisition failed:', err.message);
+          }
         }
       }
     }

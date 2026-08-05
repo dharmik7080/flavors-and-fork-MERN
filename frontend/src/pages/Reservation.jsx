@@ -140,6 +140,33 @@ function Reservation({ triggerToast }) {
     }
   };
 
+  // Callback wrapper for table selection on visual floor map
+  const handleTableSelect = (tableId) => {
+    if (!tableId) {
+      setSelectedTable('');
+      return;
+    }
+    if (user) {
+      setSelectedTable(tableId);
+      triggerToast(`Selected Table #${tableId}`);
+    } else {
+      triggerToast('Authentication required. Please log in.');
+      setSelectedTable(tableId);
+    }
+  };
+
+  // Auto-fill Reservation form fields when logged-in user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || ''
+      }));
+    }
+  }, [user]);
+
   // Update formData when selectedTable changes via FloorMap locking
   useEffect(() => {
     setFormData(prev => ({ ...prev, tableId: selectedTable }));
@@ -160,7 +187,7 @@ function Reservation({ triggerToast }) {
             ...savedForm,
             tableId
           }));
-          triggerToast(`✨ Restored your table #${tableId} reservation intent.`);
+          triggerToast(`Selected Table #${tableId}`);
           sessionStorage.removeItem('pendingAction');
         }
       } catch (e) {
@@ -178,8 +205,19 @@ function Reservation({ triggerToast }) {
       return;
     }
 
-    requireAuth(
-      async () => {
+    if (!user) {
+      sessionStorage.setItem('pendingBookingTable', selectedTable);
+      sessionStorage.setItem('pendingBookingForm', JSON.stringify(formData));
+      sessionStorage.setItem('pendingAction', JSON.stringify({
+        type: 'BOOK_TABLE',
+        payload: { tableId: selectedTable, formData },
+        pathname: '/reservation'
+      }));
+      navigate('/login?redirect=/reservation');
+      return;
+    }
+
+    const executeBooking = async () => {
         const inputDate = new Date(formData.date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -270,10 +308,9 @@ function Reservation({ triggerToast }) {
             originalBtn.innerText = 'Confirm Booking';
           }
         }
-      },
-      { type: 'BOOK_TABLE', payload: { tableId: selectedTable, formData } },
-      navigate
-    );
+      };
+
+      executeBooking();
   };
 
   const handleBookAnother = () => {
@@ -315,7 +352,7 @@ function Reservation({ triggerToast }) {
               
               <FloorMap 
                 selectedTable={selectedTable}
-                setSelectedTable={setSelectedTable}
+                setSelectedTable={handleTableSelect}
                 bookedTables={bookedTables}
                 triggerToast={triggerToast}
                 onInspect={setInspectTable}
