@@ -7,7 +7,7 @@ import FloorMap from '../components/FloorMap.jsx';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
-  const { user, requireAuth } = useContext(AuthContext);
+  const { user, setUser, requireAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [selectedTable, setSelectedTable] = useState('');
@@ -236,6 +236,11 @@ function Reservation({ triggerToast }) {
       } catch (err) {
         if (err.response?.status === 409) {
           triggerToast('Another device has claimed the table.');
+        } else if (err.response?.status === 401) {
+          setUser(null);
+          localStorage.removeItem('flavorsAndForkUser');
+          triggerToast('Session expired. Please log in again.');
+          navigate('/login?redirect=/reservation');
         } else {
           console.error('Lock error:', err);
           triggerToast(err.response?.data?.error || 'Failed to select table.');
@@ -396,8 +401,15 @@ function Reservation({ triggerToast }) {
           setSelectedTable('');
           clearCart();
         } catch (err) {
-          console.error('Reservation API error:', err);
-          alert('Failed to process reservation booking: ' + (err.response?.data?.error || err.message));
+          if (err.response?.status === 401) {
+            setUser(null);
+            localStorage.removeItem('flavorsAndForkUser');
+            triggerToast('Session expired. Please log in again.');
+            navigate('/login?redirect=/reservation');
+          } else {
+            console.error('Reservation API error:', err);
+            alert('Failed to process reservation booking: ' + (err.response?.data?.error || err.message));
+          }
         } finally {
           if (originalBtn) {
             originalBtn.disabled = false;
