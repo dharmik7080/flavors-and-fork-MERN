@@ -18,7 +18,7 @@ function Footer() {
     setLoading(true);
     setMsg({ text: '', type: '' });
 
-    const API_BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) || import.meta.env?.VITE_API_URL || 'https://flavors-and-fork-mern.onrender.com';
+    const API_BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) || import.meta.env?.VITE_API_URL || '';
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/newsletter/subscribe`, {
