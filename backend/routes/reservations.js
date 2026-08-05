@@ -2,6 +2,7 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import Reservation from '../models/Reservation.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import TableLock from '../models/TableLock.js';
 
 const router = express.Router();
 
@@ -203,6 +204,94 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting reservation:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// POST /api/reservations/lock-table - Protected route to lock a table temporarily
+router.post('/lock-table', authMiddleware, async (req, res) => {
+  try {
+    const { tableNo, date, timeSlot } = req.body;
+    const userId = req.session.user.id || req.session.user._id;
+
+    if (!tableNo || !date || !timeSlot) {
+      return res.status(400).json({ error: 'tableNo, date, and timeSlot are required!' });
+    }
+
+    // 1. Delete expired locks generally
+    await TableLock.deleteMany({ expiresAt: { $lte: new Date() } });
+
+    // 2. Also delete any previous locks held by this user for the same date/timeslot to enforce single-lock rule
+    await TableLock.deleteMany({ lockedBy: userId, date, timeSlot });
+
+    // 3. Create a new lock valid for 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const lock = new TableLock({
+      tableNo,
+      date,
+      timeSlot,
+      lockedBy: userId,
+      expiresAt
+    });
+
+    await lock.save();
+    console.log(`[LOCK] Table #${tableNo} locked for user ${userId} on slot ${date} ${timeSlot}`);
+
+    res.status(201).json({
+      success: true,
+      message: `Table #${tableNo} temporarily locked.`,
+      lock
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      console.warn(`[LOCK CONFLICT] Table is already locked for slot.`);
+      return res.status(409).json({ error: 'This table has already been claimed by another device.' });
+    }
+    console.error('Failed to lock table:', error.message);
+    res.status(500).json({ error: 'Failed to temporarily lock table' });
+  }
+});
+
+// POST /api/reservations/release-lock - Release table lock
+router.post('/release-lock', authMiddleware, async (req, res) => {
+  try {
+    const { tableNo, date, timeSlot } = req.body;
+    const userId = req.session.user.id || req.session.user._id;
+
+    if (!tableNo || !date || !timeSlot) {
+      return res.status(400).json({ error: 'tableNo, date, and timeSlot are required!' });
+    }
+
+    await TableLock.deleteOne({ tableNo, date, timeSlot, lockedBy: userId });
+    console.log(`[RELEASE] Table #${tableNo} released for user ${userId}`);
+
+    res.json({ success: true, message: `Table #${tableNo} lock released.` });
+  } catch (error) {
+    console.error('Failed to release lock:', error.message);
+    res.status(500).json({ error: 'Failed to release table lock' });
+  }
+});
+
+// GET /api/reservations/active-locks - Get all unexpired locks for date and timeSlot
+router.get('/active-locks', async (req, res) => {
+  try {
+    const { date, timeSlot } = req.query;
+    if (!date || !timeSlot) {
+      return res.status(400).json({ error: 'date and timeSlot query parameters are required!' });
+    }
+
+    // Purge expired locks first
+    await TableLock.deleteMany({ expiresAt: { $lte: new Date() } });
+
+    const activeLocks = await TableLock.find({
+      date,
+      timeSlot,
+      expiresAt: { $gt: new Date() }
+    });
+
+    res.json(activeLocks);
+  } catch (error) {
+    console.error('Failed to fetch active locks:', error.message);
+    res.status(500).json({ error: 'Failed to fetch active locks' });
   }
 });
 

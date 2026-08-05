@@ -31,6 +31,7 @@ function Reservation({ triggerToast }) {
   const [bookingConfirmed, setBookingConfirmed] = useState(null);
   const [suggestedTable, setSuggestedTable] = useState('');
   const [inspectTable, setInspectTable] = useState(null);
+  const [activeLocks, setActiveLocks] = useState([]);
 
   // Table metadata for the Inspect Modal
   const TABLE_DETAILS = {
@@ -97,13 +98,55 @@ function Reservation({ triggerToast }) {
     });
   }, [formData.date, formData.timeSlot]);
 
+  // HTTP Polling every 3 seconds to fetch active table locks for selected date and slot
+  useEffect(() => {
+    if (!formData.date || !formData.timeSlot) return;
+
+    const fetchActiveLocks = async () => {
+      try {
+        const response = await axios.get('/api/reservations/active-locks', {
+          params: {
+            date: formData.date,
+            timeSlot: formData.timeSlot
+          }
+        });
+        setActiveLocks(response.data || []);
+      } catch (err) {
+        console.warn('Failed to poll active table locks:', err.message);
+      }
+    };
+
+    // Initial fetch
+    fetchActiveLocks();
+
+    const interval = setInterval(fetchActiveLocks, 3000);
+    return () => clearInterval(interval);
+  }, [formData.date, formData.timeSlot]);
+
+  // Release table lock on component unmount
+  useEffect(() => {
+    return () => {
+      if (selectedTable && user) {
+        axios.post('/api/reservations/release-lock', {
+          tableNo: selectedTable,
+          date: formData.date,
+          timeSlot: formData.timeSlot
+        }).catch(err => console.warn('Clean unmount lock release failed:', err.message));
+      }
+    };
+  }, [selectedTable, user, formData.date, formData.timeSlot]);
+
   // Update table grid when selected date changes and release previous lock
   const handleDateChange = async (e) => {
     const newDate = e.target.value;
     
-    if (selectedTable) {
+    if (selectedTable && user) {
       try {
-        await axios.post('/api/locks/release-lock', { tableId: selectedTable });
+        await axios.post('/api/reservations/release-lock', { 
+          tableNo: selectedTable,
+          date: formData.date,
+          timeSlot: formData.timeSlot
+        });
       } catch (releaseErr) {
         console.warn('Failed to release previous table lock on date change:', releaseErr.message);
       }
@@ -141,14 +184,63 @@ function Reservation({ triggerToast }) {
   };
 
   // Callback wrapper for table selection on visual floor map
-  const handleTableSelect = (tableId) => {
+  const handleTableSelect = async (tableId) => {
     if (!tableId) {
+      if (selectedTable && user) {
+        try {
+          await axios.post('/api/reservations/release-lock', {
+            tableNo: selectedTable,
+            date: formData.date,
+            timeSlot: formData.timeSlot
+          });
+        } catch (err) {
+          console.warn('Failed to release lock:', err.message);
+        }
+      }
       setSelectedTable('');
       return;
     }
+
     if (user) {
-      setSelectedTable(tableId);
-      triggerToast(`Selected Table #${tableId}`);
+      try {
+        // Toggle selection off if user selects the same table again
+        if (selectedTable === tableId) {
+          try {
+            await axios.post('/api/reservations/release-lock', {
+              tableNo: tableId,
+              date: formData.date,
+              timeSlot: formData.timeSlot
+            });
+          } catch (err) {
+            console.warn('Failed to release lock:', err.message);
+          }
+          setSelectedTable('');
+          return;
+        }
+
+        // Try to acquire backend table lock
+        await axios.post('/api/reservations/lock-table', {
+          tableNo: tableId,
+          date: formData.date,
+          timeSlot: formData.timeSlot
+        });
+
+        setSelectedTable(tableId);
+        triggerToast(`Selected Table #${tableId}`);
+
+        // Instantly refresh active locks list
+        const res = await axios.get('/api/reservations/active-locks', {
+          params: { date: formData.date, timeSlot: formData.timeSlot }
+        });
+        setActiveLocks(res.data || []);
+      } catch (err) {
+        if (err.response?.status === 409) {
+          triggerToast('Another device has claimed the table.');
+        } else {
+          console.error('Lock error:', err);
+          triggerToast(err.response?.data?.error || 'Failed to select table.');
+        }
+      }
     } else {
       triggerToast('Authentication required. Please log in.');
       setSelectedTable(tableId);
@@ -292,7 +384,11 @@ function Reservation({ triggerToast }) {
           
           // Release table lock on backend on successful booking checkout
           try {
-            await axios.post('/api/locks/release-lock', { tableId: selectedTable });
+            await axios.post('/api/reservations/release-lock', { 
+              tableNo: selectedTable,
+              date: formData.date,
+              timeSlot: formData.timeSlot
+            });
           } catch (releaseErr) {
             console.warn('Failed to release lock on booking checkout success:', releaseErr.message);
           }
@@ -354,6 +450,7 @@ function Reservation({ triggerToast }) {
                 selectedTable={selectedTable}
                 setSelectedTable={handleTableSelect}
                 bookedTables={bookedTables}
+                activeLocks={activeLocks}
                 triggerToast={triggerToast}
                 onInspect={setInspectTable}
               />

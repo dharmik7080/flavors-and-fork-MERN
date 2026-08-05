@@ -2,128 +2,24 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 
-function FloorMap({ selectedTable, setSelectedTable, bookedTables, triggerToast, onInspect }) {
+function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks = [], triggerToast, onInspect }) {
   const { user } = useContext(AuthContext);
-  const [activeLocks, setActiveLocks] = useState([]);
-  const [pollingErrorCount, setPollingErrorCount] = useState(0);
 
-  // Get or create a unique guest session ID
-  const getGuestId = () => {
-    let guestId = localStorage.getItem('flavorsAndForkGuestId');
-    if (!guestId) {
-      guestId = `guest_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
-      localStorage.setItem('flavorsAndForkGuestId', guestId);
-    }
-    return guestId;
-  };
-
-  // 1. HTTP Polling every 3 seconds to fetch active table locks
-  useEffect(() => {
-    const fetchActiveLocks = async () => {
-      try {
-        const response = await axios.get('/api/locks/active-locks');
-        setActiveLocks(response.data || []);
-        setPollingErrorCount(0); // Reset errors on successful fetch
-      } catch (err) {
-        console.warn('Failed to poll active table locks:', err.message);
-        setPollingErrorCount(prev => prev + 1);
-      }
-    };
-
-    // Initial fetch
-    fetchActiveLocks();
-
-    const interval = setInterval(fetchActiveLocks, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Release lock on component unmount if user has a locked table
-  useEffect(() => {
-    return () => {
-      if (selectedTable) {
-        const userId = (user && (user._id || user.id)) || getGuestId();
-        axios.post('/api/locks/release-lock', {
-          tableId: selectedTable,
-          userId
-        }).catch(err => console.warn('Clean unmount lock release failed:', err.message));
-      }
-    };
-  }, [selectedTable, user]);
-
-  const handleTableClick = async (tableId) => {
+  const handleTableClick = (tableId) => {
     if (bookedTables.includes(tableId)) {
       return; // Table is permanently booked
     }
 
-    const userId = (user && (user._id || user.id)) || getGuestId();
-    const currentLock = activeLocks.find(lock => lock.tableId === String(tableId));
-    const isLockedByOther = currentLock && currentLock.lockedBy !== userId;
-    const isLockedByMe = selectedTable === tableId;
+    const currentUserId = user ? (user._id || user.id) : null;
+    const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
+    const isLockedByOther = currentLock && currentLock.lockedBy !== currentUserId;
 
     if (isLockedByOther) {
       triggerToast('❌ This table is locked by another customer. Please select another table.');
       return;
     }
 
-    if (isLockedByMe) {
-      // Release lock locally
-      setSelectedTable('');
-      
-      // Silently release on backend in background only if logged in
-      if (user) {
-        try {
-          await axios.post('/api/locks/release-lock', {
-            tableId,
-            userId
-          });
-        } catch (err) {
-          console.warn('Failed to release lock silently:', err.message);
-        }
-      }
-    } else {
-      // Select new table locally
-      setSelectedTable(tableId);
-
-      // Perform backend lock operations silently only if logged in
-      if (user) {
-        try {
-          // If the user already had another table selected, release that lock first silently
-          if (selectedTable) {
-            try {
-              await axios.post('/api/locks/release-lock', {
-                tableId: selectedTable,
-                userId
-              });
-            } catch (releaseErr) {
-              console.warn('Failed to release previous table lock:', releaseErr.message);
-            }
-          }
-
-          // Acquire new lock
-          const response = await axios.post('/api/locks/lock-table', {
-            tableId,
-            userId
-          });
-
-          if (response.data.success) {
-            // Instantly refresh locks list to reflect locally
-            const updatedLocks = await axios.get('/api/locks/active-locks');
-            setActiveLocks(updatedLocks.data || []);
-          }
-        } catch (err) {
-          if (err.response?.status === 409) {
-            triggerToast('❌ Conflict: This table was just locked by another customer!');
-            // Refresh list to show updated status
-            const updatedLocks = await axios.get('/api/locks/active-locks');
-            setActiveLocks(updatedLocks.data || []);
-            // De-select locally since it's locked by other
-            setSelectedTable('');
-          } else {
-            console.warn('Silent lock acquisition failed:', err.message);
-          }
-        }
-      }
-    }
+    setSelectedTable(tableId);
   };
 
   const renderTableCard = (tableNum, zone) => {
@@ -131,11 +27,11 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, triggerToast,
     const isBooked = bookedTables.includes(tableId);
     
     // Determine locks state
-    const userId = (user && (user._id || user.id)) || getGuestId();
-    const currentLock = activeLocks.find(lock => lock.tableId === tableId);
+    const currentUserId = user ? (user._id || user.id) : null;
+    const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
     
-    const isLockedByMe = selectedTable === tableId || (currentLock && currentLock.lockedBy === userId);
-    const isLockedByOther = currentLock && currentLock.lockedBy !== userId;
+    const isLockedByMe = selectedTable === tableId || (currentLock && currentLock.lockedBy === currentUserId);
+    const isLockedByOther = currentLock && currentLock.lockedBy !== currentUserId;
 
     let stateClass = 'available';
     if (isBooked) stateClass = 'booked';
@@ -200,13 +96,7 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, triggerToast,
 
   return (
     <div className="seating-layout-container d-flex flex-column gap-3">
-      {/* Connection Offline Indicator */}
-      {pollingErrorCount >= 3 && (
-        <div className="alert alert-danger bg-danger bg-opacity-10 text-danger border-danger rounded-3 p-2 mb-2 small text-center">
-          <i className="bi bi-exclamation-triangle-fill me-2"></i>
-          Connection interrupted. Lock sync is currently running offline.
-        </div>
-      )}
+
 
       {/* Window Views Section */}
       <div className="seating-section">

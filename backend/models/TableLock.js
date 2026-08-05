@@ -1,13 +1,21 @@
 import mongoose from 'mongoose';
 
 const tableLockSchema = new mongoose.Schema({
-  tableId: {
+  tableNo: {
     type: String,
-    required: true,
-    unique: true
+    required: true
+  },
+  date: {
+    type: String,
+    required: true
+  },
+  timeSlot: {
+    type: String,
+    required: true
   },
   lockedBy: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   expiresAt: {
@@ -17,6 +25,9 @@ const tableLockSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Compound unique index on tableNo, date, and timeSlot
+tableLockSchema.index({ tableNo: 1, date: 1, timeSlot: 1 }, { unique: true });
 
 // Create a MongoDB TTL index so expired locks delete automatically
 tableLockSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
