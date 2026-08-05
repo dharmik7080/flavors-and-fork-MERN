@@ -207,14 +207,13 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/reservations/lock-table - Protected route to lock a table temporarily
-router.post('/lock-table', authMiddleware, async (req, res) => {
+// POST /api/reservations/lock-table - Lock a table temporarily (userId from body — works cross-origin)
+router.post('/lock-table', async (req, res) => {
   try {
-    const { tableNo, date, timeSlot } = req.body;
-    const userId = req.session.user.id || req.session.user._id;
+    const { tableNo, date, timeSlot, userId } = req.body;
 
-    if (!tableNo || !date || !timeSlot) {
-      return res.status(400).json({ error: 'tableNo, date, and timeSlot are required!' });
+    if (!tableNo || !date || !timeSlot || !userId) {
+      return res.status(400).json({ error: 'tableNo, date, timeSlot, and userId are required!' });
     }
 
     // 1. Delete expired locks generally
@@ -251,14 +250,13 @@ router.post('/lock-table', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/reservations/release-lock - Release table lock
-router.post('/release-lock', authMiddleware, async (req, res) => {
+// POST /api/reservations/release-lock - Release table lock (userId from body — works cross-origin)
+router.post('/release-lock', async (req, res) => {
   try {
-    const { tableNo, date, timeSlot } = req.body;
-    const userId = req.session.user.id || req.session.user._id;
+    const { tableNo, date, timeSlot, userId } = req.body;
 
-    if (!tableNo || !date || !timeSlot) {
-      return res.status(400).json({ error: 'tableNo, date, and timeSlot are required!' });
+    if (!tableNo || !date || !timeSlot || !userId) {
+      return res.status(400).json({ error: 'tableNo, date, timeSlot, and userId are required!' });
     }
 
     await TableLock.deleteOne({ tableNo, date, timeSlot, lockedBy: userId });

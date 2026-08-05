@@ -123,29 +123,43 @@ function Reservation({ triggerToast }) {
     return () => clearInterval(interval);
   }, [formData.date, formData.timeSlot]);
 
+  // Helper to get user ID reliably from context or localStorage fallback
+  const getUserId = () => {
+    if (user && (user._id || user.id)) return user._id || user.id;
+    try {
+      const stored = JSON.parse(localStorage.getItem('flavorsAndForkUser') || '{}');
+      return stored._id || stored.id || null;
+    } catch { return null; }
+  };
+
   // Release table lock on component unmount
   useEffect(() => {
     return () => {
-      if (selectedTable && user) {
+      const userId = getUserId();
+      if (selectedTable && userId) {
         axios.post('/api/reservations/release-lock', {
           tableNo: selectedTable,
           date: formData.date,
-          timeSlot: formData.timeSlot
+          timeSlot: formData.timeSlot,
+          userId
         }).catch(err => console.warn('Clean unmount lock release failed:', err.message));
       }
     };
-  }, [selectedTable, user, formData.date, formData.timeSlot]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTable, formData.date, formData.timeSlot]);
 
   // Update table grid when selected date changes and release previous lock
   const handleDateChange = async (e) => {
     const newDate = e.target.value;
-    
-    if (selectedTable && user) {
+    const userId = getUserId();
+
+    if (selectedTable && userId) {
       try {
         await axios.post('/api/reservations/release-lock', { 
           tableNo: selectedTable,
           date: formData.date,
-          timeSlot: formData.timeSlot
+          timeSlot: formData.timeSlot,
+          userId
         });
       } catch (releaseErr) {
         console.warn('Failed to release previous table lock on date change:', releaseErr.message);
@@ -185,13 +199,16 @@ function Reservation({ triggerToast }) {
 
   // Callback wrapper for table selection on visual floor map
   const handleTableSelect = async (tableId) => {
+    const userId = getUserId();
+
     if (!tableId) {
-      if (selectedTable && user) {
+      if (selectedTable && userId) {
         try {
           await axios.post('/api/reservations/release-lock', {
             tableNo: selectedTable,
             date: formData.date,
-            timeSlot: formData.timeSlot
+            timeSlot: formData.timeSlot,
+            userId
           });
         } catch (err) {
           console.warn('Failed to release lock:', err.message);
@@ -209,7 +226,8 @@ function Reservation({ triggerToast }) {
             await axios.post('/api/reservations/release-lock', {
               tableNo: tableId,
               date: formData.date,
-              timeSlot: formData.timeSlot
+              timeSlot: formData.timeSlot,
+              userId
             });
           } catch (err) {
             console.warn('Failed to release lock:', err.message);
@@ -222,7 +240,8 @@ function Reservation({ triggerToast }) {
         await axios.post('/api/reservations/lock-table', {
           tableNo: tableId,
           date: formData.date,
-          timeSlot: formData.timeSlot
+          timeSlot: formData.timeSlot,
+          userId
         });
 
         setSelectedTable(tableId);
@@ -236,14 +255,9 @@ function Reservation({ triggerToast }) {
       } catch (err) {
         if (err.response?.status === 409) {
           triggerToast('Another device has claimed the table.');
-        } else if (err.response?.status === 401) {
-          setUser(null);
-          localStorage.removeItem('flavorsAndForkUser');
-          triggerToast('Session expired. Please log in again.');
-          navigate('/login?redirect=/reservation');
         } else {
           console.error('Lock error:', err);
-          triggerToast(err.response?.data?.error || 'Failed to select table.');
+          triggerToast(err.response?.data?.error || 'Failed to select table. Please try again.');
         }
       }
     } else {
@@ -392,7 +406,8 @@ function Reservation({ triggerToast }) {
             await axios.post('/api/reservations/release-lock', { 
               tableNo: selectedTable,
               date: formData.date,
-              timeSlot: formData.timeSlot
+              timeSlot: formData.timeSlot,
+              userId: getUserId()
             });
           } catch (releaseErr) {
             console.warn('Failed to release lock on booking checkout success:', releaseErr.message);
