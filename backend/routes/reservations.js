@@ -211,37 +211,45 @@ router.delete('/:id', async (req, res) => {
 router.post('/lock-table', async (req, res) => {
   try {
     const { tableNo, date, timeSlot, userId } = req.body;
-    const currentUserId = userId || req.session?.user?.id || req.session?.user?._id;
+    const currentUserId = userId || req.user?._id || req.session?.user?.id || req.session?.user?._id;
 
     if (!tableNo || !date || !timeSlot || !currentUserId) {
       return res.status(400).json({ error: 'tableNo, date, timeSlot, and userId are required!' });
     }
 
+    const numericTableNo = Number(tableNo);
+
     // 1. Delete expired locks for this specific table slot to avoid blocking new locks
     await TableLock.deleteMany({ 
-      tableNo, 
+      tableNo: numericTableNo, 
       date, 
       timeSlot, 
       expiresAt: { $lte: new Date() } 
     });
 
-    // 2. Check if there is an active lock for this specific table, date, and timeSlot
-    const existingLock = await TableLock.findOne({ tableNo, date, timeSlot });
+    // 2. Scope TableLock.findOne strictly to { tableNo: Number(tableNo), date, timeSlot, expiresAt: { $gt: new Date() } }
+    const existingLock = await TableLock.findOne({ 
+      tableNo: numericTableNo, 
+      date, 
+      timeSlot, 
+      expiresAt: { $gt: new Date() } 
+    });
 
     if (existingLock) {
-      if (String(existingLock.lockedBy) === String(currentUserId)) {
+      // Convert ObjectIds to strings during check: existingLock.lockedBy.toString() !== currentUserId.toString()
+      if (existingLock.lockedBy.toString() === currentUserId.toString()) {
         // If the current user already holds the lock for that specific tableNo, extend the expiresAt timestamp
         existingLock.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
         await existingLock.save();
-        console.log(`[LOCK EXTENDED] Table #${tableNo} lock extended for user ${currentUserId}`);
+        console.log(`[LOCK EXTENDED] Table #${numericTableNo} lock extended for user ${currentUserId}`);
         return res.status(200).json({
           success: true,
-          message: `Table #${tableNo} lock extended.`,
+          message: `Table #${numericTableNo} lock extended.`,
           lock: existingLock
         });
       } else {
-        // Return HTTP 409 Conflict ONLY if active lock is held by another user
-        console.warn(`[LOCK CONFLICT] Table #${tableNo} is already locked by another user`);
+        // Only return HTTP 409 Conflict if the lock exists for THAT SPECIFIC tableNo and belongs to a different lockedBy ID
+        console.warn(`[LOCK CONFLICT] Table #${numericTableNo} is already locked by another user`);
         return res.status(409).json({ error: 'This table has already been claimed by another device.' });
       }
     }
@@ -249,7 +257,7 @@ router.post('/lock-table', async (req, res) => {
     // 3. Create a new lock valid for 5 minutes
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     const lock = new TableLock({
-      tableNo,
+      tableNo: numericTableNo,
       date,
       timeSlot,
       lockedBy: currentUserId,
@@ -257,11 +265,11 @@ router.post('/lock-table', async (req, res) => {
     });
 
     await lock.save();
-    console.log(`[LOCK] Table #${tableNo} locked for user ${currentUserId} on slot ${date} ${timeSlot}`);
+    console.log(`[LOCK] Table #${numericTableNo} locked for user ${currentUserId} on slot ${date} ${timeSlot}`);
 
     res.status(201).json({
       success: true,
-      message: `Table #${tableNo} temporarily locked.`,
+      message: `Table #${numericTableNo} temporarily locked.`,
       lock
     });
   } catch (error) {
@@ -278,13 +286,19 @@ router.post('/lock-table', async (req, res) => {
 router.post('/release-lock', async (req, res) => {
   try {
     const { tableNo, date, timeSlot, userId } = req.body;
+    const currentUserId = userId || req.user?._id || req.session?.user?.id || req.session?.user?._id;
 
-    if (!tableNo || !date || !timeSlot || !userId) {
+    if (!tableNo || !date || !timeSlot || !currentUserId) {
       return res.status(400).json({ error: 'tableNo, date, timeSlot, and userId are required!' });
     }
 
-    await TableLock.deleteOne({ tableNo, date, timeSlot, lockedBy: userId });
-    console.log(`[RELEASE] Table #${tableNo} released for user ${userId}`);
+    await TableLock.deleteOne({ 
+      tableNo: Number(tableNo), 
+      date, 
+      timeSlot, 
+      lockedBy: currentUserId 
+    });
+    console.log(`[RELEASE] Table #${tableNo} released for user ${currentUserId}`);
 
     res.json({ success: true, message: `Table #${tableNo} lock released.` });
   } catch (error) {

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const tableLockSchema = new mongoose.Schema({
   tableNo: {
-    type: String,
+    type: Number,
     required: true
   },
   date: {
