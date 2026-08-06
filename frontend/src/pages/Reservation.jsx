@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { CartContext } from '../context/CartContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -10,7 +10,9 @@ function Reservation({ triggerToast }) {
   const { user, setUser, requireAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedTable, setSelectedTable] = useState(() => {
+    return sessionStorage.getItem('selectedTableNo') || '';
+  });
   const [bookings, setBookings] = useState({});
   const [bookedTables, setBookedTables] = useState([]);
   const [formData, setFormData] = useState({
@@ -98,30 +100,30 @@ function Reservation({ triggerToast }) {
     });
   }, [formData.date, formData.timeSlot]);
 
+  const fetchActiveLocks = useCallback(async () => {
+    if (!formData.date || !formData.timeSlot) return;
+    try {
+      const response = await axios.get('/api/reservations/active-locks', {
+        params: {
+          date: formData.date,
+          timeSlot: formData.timeSlot
+        }
+      });
+      // Handle variations in response formats safely
+      const locks = response.data.locks || response.data.activeLocks || (Array.isArray(response.data) ? response.data : []);
+      setActiveLocks(locks);
+      console.log('Active locks polled:', locks); // Log activeLocks to console during development
+    } catch (err) {
+      console.warn('Failed to poll active table locks:', err.message);
+    }
+  }, [formData.date, formData.timeSlot]);
+
   // HTTP Polling every 3 seconds to fetch active table locks for selected date and slot
   useEffect(() => {
-    if (!formData.date || !formData.timeSlot) return;
-
-    const fetchActiveLocks = async () => {
-      try {
-        const response = await axios.get('/api/reservations/active-locks', {
-          params: {
-            date: formData.date,
-            timeSlot: formData.timeSlot
-          }
-        });
-        setActiveLocks(response.data || []);
-      } catch (err) {
-        console.warn('Failed to poll active table locks:', err.message);
-      }
-    };
-
-    // Initial fetch
     fetchActiveLocks();
-
     const interval = setInterval(fetchActiveLocks, 3000);
     return () => clearInterval(interval);
-  }, [formData.date, formData.timeSlot]);
+  }, [fetchActiveLocks]);
 
   // Helper to get user ID reliably from context or localStorage fallback — always returns a plain string
   const getUserId = () => {
@@ -217,6 +219,8 @@ function Reservation({ triggerToast }) {
         }
       }
       setSelectedTable('');
+      sessionStorage.removeItem('selectedTableNo');
+      fetchActiveLocks(); // Immediate sync
       return;
     }
 
@@ -235,6 +239,8 @@ function Reservation({ triggerToast }) {
             console.warn('Failed to release lock:', err.message);
           }
           setSelectedTable('');
+          sessionStorage.removeItem('selectedTableNo');
+          fetchActiveLocks(); // Immediate sync
           return;
         }
 
@@ -247,13 +253,11 @@ function Reservation({ triggerToast }) {
         });
 
         setSelectedTable(tableId);
+        sessionStorage.setItem('selectedTableNo', tableId);
         triggerToast(`Selected Table #${tableId}`);
 
         // Instantly refresh active locks list
-        const res = await axios.get('/api/reservations/active-locks', {
-          params: { date: formData.date, timeSlot: formData.timeSlot }
-        });
-        setActiveLocks(res.data || []);
+        fetchActiveLocks();
       } catch (err) {
         if (err.response?.status === 409) {
           triggerToast('Another device has claimed the table.');
@@ -283,6 +287,11 @@ function Reservation({ triggerToast }) {
   // Update formData when selectedTable changes via FloorMap locking
   useEffect(() => {
     setFormData(prev => ({ ...prev, tableId: selectedTable }));
+    if (selectedTable) {
+      sessionStorage.setItem('selectedTableNo', selectedTable);
+    } else {
+      sessionStorage.removeItem('selectedTableNo');
+    }
   }, [selectedTable]);
 
   // Handle recovery of pending booking actions after successful login

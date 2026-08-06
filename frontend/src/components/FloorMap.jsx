@@ -5,16 +5,15 @@ import { AuthContext } from '../context/AuthContext.jsx';
 function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks = [], triggerToast, onInspect }) {
   const { user } = useContext(AuthContext);
 
-  const handleTableClick = (tableId) => {
+  const handleTableClick = (tableNo) => {
+    const tableId = String(tableNo);
     if (bookedTables.includes(tableId)) {
       return;
     }
 
-    // Normalize to string to avoid ObjectId vs string comparison bugs
-    const currentUserId = user ? String(user._id || user.id || '') : '';
-    const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
-    const isLockedByOther = currentLock && currentUserId &&
-      String(currentLock.lockedBy) !== currentUserId;
+    const currentUserId = user?._id || user?.id;
+    const activeLock = activeLocks.find(l => Number(l.tableNo) === Number(tableNo));
+    const isLockedByOther = activeLock && String(activeLock.lockedBy) !== String(currentUserId);
 
     if (isLockedByOther) {
       triggerToast('❌ This table is locked by another customer. Please select another table.');
@@ -28,18 +27,17 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks =
     const tableId = String(tableNum);
     const isBooked = bookedTables.includes(tableId);
     
-    // Normalize to string to avoid ObjectId vs string comparison bugs
-    const currentUserId = user ? String(user._id || user.id || '') : '';
-    const currentLock = activeLocks.find(lock => lock.tableNo === tableId);
+    // Cast numbers and strings safely to prevent type-mismatch bugs
+    const activeLock = activeLocks.find(l => Number(l.tableNo) === Number(tableNum));
+    const currentUserId = user?._id || user?.id;
     
-    const isLockedByMe = selectedTable === tableId || 
-      (currentLock && currentUserId && String(currentLock.lockedBy) === currentUserId);
-    const isLockedByOther = currentLock && currentUserId && 
-      String(currentLock.lockedBy) !== currentUserId;
+    const isLockedByOther = activeLock && String(activeLock.lockedBy) !== String(currentUserId);
+    const isLockedByMe = Number(selectedTable) === Number(tableNum) || 
+      (activeLock && String(activeLock.lockedBy) === String(currentUserId));
 
     let stateClass = 'available';
     if (isBooked) stateClass = 'booked';
-    else if (isLockedByOther) stateClass = 'booked'; // Render other locks as booked/disabled style
+    else if (isLockedByOther) stateClass = 'booked'; 
     else if (isLockedByMe) stateClass = 'selected';
 
     let zoneClass = '';
@@ -47,28 +45,57 @@ function FloorMap({ selectedTable, setSelectedTable, bookedTables, activeLocks =
     else if (zone === 'lounge') zoneClass = 'zone-lounge';
     else if (zone === 'booth') zoneClass = 'zone-booth';
 
+    // Build premium custom styles
+    let cardStyle = {
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+    };
+
+    if (isBooked) {
+      cardStyle = {
+        ...cardStyle,
+        cursor: 'not-allowed',
+        opacity: 0.6,
+        backgroundColor: '#1c1c1c',
+        border: '1px solid #333'
+      };
+    } else if (isLockedByOther) {
+      cardStyle = {
+        ...cardStyle,
+        cursor: 'not-allowed',
+        opacity: 0.5,
+        backgroundColor: '#2a1a1a', // dark red/gray
+        border: '1px solid #721c24', // dark red border
+        boxShadow: 'inset 0 0 10px rgba(114, 28, 36, 0.3)'
+      };
+    } else if (isLockedByMe) {
+      cardStyle = {
+        ...cardStyle,
+        backgroundColor: '#2b2310', // dark yellow background
+        border: '2px solid #ffc107', // yellow glow border
+        boxShadow: '0 0 12px rgba(255, 193, 7, 0.4), inset 0 0 8px rgba(255, 193, 7, 0.2)'
+      };
+    }
+
     return (
       <div
         key={tableId}
-        onClick={() => handleTableClick(tableId)}
+        onClick={() => !isBooked && !isLockedByOther && handleTableClick(tableId)}
         className={`table-card ${stateClass} ${zoneClass} position-relative`}
-        style={{
-          cursor: isBooked || isLockedByOther ? 'not-allowed' : 'pointer',
-          opacity: isLockedByOther ? 0.6 : 1
-        }}
+        style={cardStyle}
       >
         Table #{tableId}
         {isBooked && (
           <div className="small fw-normal mt-1" style={{ fontSize: '0.8rem' }}>Booked</div>
         )}
         {isLockedByOther && !isBooked && (
-          <div className="small fw-normal mt-1 text-danger" style={{ fontSize: '0.8rem' }}>
-            <i className="bi bi-lock-fill me-1"></i>Locked
+          <div className="small fw-normal mt-1 text-danger" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+            🔒 Locked
           </div>
         )}
         {isLockedByMe && (
-          <div className="small fw-normal mt-1 text-success" style={{ fontSize: '0.8rem' }}>
-            <i className="bi bi-unlock-fill me-1"></i>Reserved
+          <div className="small fw-normal mt-1 text-warning" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+            🟢 Reserved
           </div>
         )}
         {isLockedByMe && (
