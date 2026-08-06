@@ -211,16 +211,40 @@ router.delete('/:id', async (req, res) => {
 router.post('/lock-table', async (req, res) => {
   try {
     const { tableNo, date, timeSlot, userId } = req.body;
+    const currentUserId = userId || req.session?.user?.id || req.session?.user?._id;
 
-    if (!tableNo || !date || !timeSlot || !userId) {
+    if (!tableNo || !date || !timeSlot || !currentUserId) {
       return res.status(400).json({ error: 'tableNo, date, timeSlot, and userId are required!' });
     }
 
-    // 1. Delete expired locks generally
-    await TableLock.deleteMany({ expiresAt: { $lte: new Date() } });
+    // 1. Delete expired locks for this specific table slot to avoid blocking new locks
+    await TableLock.deleteMany({ 
+      tableNo, 
+      date, 
+      timeSlot, 
+      expiresAt: { $lte: new Date() } 
+    });
 
-    // 2. Also delete any previous locks held by this user for the same date/timeslot to enforce single-lock rule
-    await TableLock.deleteMany({ lockedBy: userId, date, timeSlot });
+    // 2. Check if there is an active lock for this specific table, date, and timeSlot
+    const existingLock = await TableLock.findOne({ tableNo, date, timeSlot });
+
+    if (existingLock) {
+      if (String(existingLock.lockedBy) === String(currentUserId)) {
+        // If the current user already holds the lock for that specific tableNo, extend the expiresAt timestamp
+        existingLock.expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+        await existingLock.save();
+        console.log(`[LOCK EXTENDED] Table #${tableNo} lock extended for user ${currentUserId}`);
+        return res.status(200).json({
+          success: true,
+          message: `Table #${tableNo} lock extended.`,
+          lock: existingLock
+        });
+      } else {
+        // Return HTTP 409 Conflict ONLY if active lock is held by another user
+        console.warn(`[LOCK CONFLICT] Table #${tableNo} is already locked by another user`);
+        return res.status(409).json({ error: 'This table has already been claimed by another device.' });
+      }
+    }
 
     // 3. Create a new lock valid for 5 minutes
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -228,12 +252,12 @@ router.post('/lock-table', async (req, res) => {
       tableNo,
       date,
       timeSlot,
-      lockedBy: userId,
+      lockedBy: currentUserId,
       expiresAt
     });
 
     await lock.save();
-    console.log(`[LOCK] Table #${tableNo} locked for user ${userId} on slot ${date} ${timeSlot}`);
+    console.log(`[LOCK] Table #${tableNo} locked for user ${currentUserId} on slot ${date} ${timeSlot}`);
 
     res.status(201).json({
       success: true,
