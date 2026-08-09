@@ -85,6 +85,16 @@ app.use('/api/newsletter', newsletterRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/locks', locksRouter);
 
+// Handle both GET and HEAD requests on the root route  
+app.route('/')  
+  .get((req, res) => res.status(200).send("Flavors & Fork API is live"))  
+  .head((req, res) => res.status(200).end());  
+
+// Dedicated health check route
+app.route('/api/health')  
+  .get((req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }))  
+  .head((req, res) => res.status(200).end());  
+
 // Basic API Check Route
 app.get('/api/status', (req, res) => {
   res.json({
