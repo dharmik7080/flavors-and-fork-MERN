@@ -28,51 +28,169 @@ export function BookingSuccessModal({ isOpen, onClose, reservationData }) {
 
   if (!isOpen || !reservationData) return null;
 
+  const backdropStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999, // Super high z-index to overlay everything
+    padding: '16px',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    boxSizing: 'border-box'
+  };
+
+  const containerStyle = {
+    width: '100%',
+    maxWidth: '380px',
+    backgroundColor: '#0c0c0e',
+    border: '1px solid #1c1c1e',
+    borderRadius: '28px',
+    padding: '24px',
+    boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+    boxSizing: 'border-box'
+  };
+
+  const headerStyle = {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#ffc107',
+    textAlign: 'center',
+    margin: 0,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    fontFamily: 'serif'
+  };
+
+  const brandingStyle = {
+    textAlign: 'center',
+    borderBottom: '1px dashed #d1d1d6',
+    paddingBottom: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px'
+  };
+
+  const brandNameStyle = {
+    fontWeight: '800',
+    fontSize: '14px',
+    letterSpacing: '0.1em',
+    margin: 0,
+    fontFamily: 'sans-serif'
+  };
+
+  const brandSubStyle = {
+    fontSize: '10px',
+    color: '#8e8e93',
+    margin: 0,
+    fontFamily: 'sans-serif'
+  };
+
+  const detailsListStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    padding: '12px 0',
+    borderBottom: '1px dashed #d1d1d6'
+  };
+
+  const detailRowStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '11px',
+    lineHeight: '1.4'
+  };
+
+  const detailLabelStyle = {
+    color: '#8e8e93'
+  };
+
+  const detailValueStyle = {
+    fontWeight: '700',
+    textAlign: 'right'
+  };
+
+  const footerTextStyle = {
+    textAlign: 'center',
+    paddingTop: '8px'
+  };
+
+  const doneButtonStyle = {
+    width: '100%',
+    marginTop: '16px',
+    padding: '10px 16px',
+    backgroundColor: '#1c1c1e',
+    color: '#ffffff',
+    fontWeight: '700',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontFamily: 'sans-serif',
+    fontSize: '12px',
+    transition: 'background-color 0.2s ease',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    boxSizing: 'border-box'
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-2xl relative flex flex-col gap-4">
-        <h3 className="text-lg font-serif text-warning text-center font-bold tracking-wider">Booking Successful</h3>
+    <div style={backdropStyle}>
+      <div style={containerStyle}>
+        <h3 style={headerStyle}>Booking Confirmed</h3>
         
         <ReceiptPrinter stage={stage}>
           <ReceiptPrinter.Paper>
-            <div className="text-center border-b border-dashed border-neutral-300 pb-3 flex flex-col gap-1">
-              <h4 className="font-bold text-sm tracking-wider font-sans">FLAVORS & FORK</h4>
-              <p className="text-[10px] text-neutral-500 font-sans">Gourmet Dining Experience</p>
+            <div style={brandingStyle}>
+              <h4 style={brandNameStyle}>FLAVORS & FORK</h4>
+              <p style={brandSubStyle}>Gourmet Dining Experience</p>
             </div>
 
-            <div className="flex flex-col gap-2 py-3 border-b border-dashed border-neutral-300 text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">GUEST NAME:</span>
-                <span className="font-semibold text-right">{reservationData.name}</span>
+            <div style={detailsListStyle}>
+              <div style={detailRowStyle}>
+                <span style={detailLabelStyle}>GUEST NAME:</span>
+                <span style={detailValueStyle}>{reservationData.name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">DATE:</span>
-                <span className="font-semibold text-right">{reservationData.date}</span>
+              <div style={detailRowStyle}>
+                <span style={detailLabelStyle}>DATE:</span>
+                <span style={detailValueStyle}>{reservationData.date}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">TIME SLOT:</span>
-                <span className="font-semibold text-right">{reservationData.timeSlot}</span>
+              <div style={detailRowStyle}>
+                <span style={detailLabelStyle}>TIME SLOT:</span>
+                <span style={detailValueStyle}>{reservationData.timeSlot}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">TABLE ASSIGNED:</span>
-                <span className="font-semibold text-right">Table #{reservationData.tableId}</span>
+              <div style={detailRowStyle}>
+                <span style={detailLabelStyle}>TABLE ASSIGNED:</span>
+                <span style={detailValueStyle}>Table #{reservationData.tableId}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">GUEST COUNT:</span>
-                <span className="font-semibold text-right">{reservationData.guestCount} Guests</span>
+              <div style={detailRowStyle}>
+                <span style={detailLabelStyle}>GUEST COUNT:</span>
+                <span style={detailValueStyle}>{reservationData.guestCount} Guests</span>
               </div>
             </div>
 
-            <div className="text-center pt-2">
-              <p className="text-[10px] text-neutral-500 font-sans">Thank you for booking with us!</p>
-              <p className="text-[9px] text-neutral-400 mt-1 font-sans">Please present this receipt upon arrival.</p>
+            <div style={footerTextStyle}>
+              <p style={{ fontSize: '10px', color: '#8e8e93', margin: 0, fontFamily: 'sans-serif' }}>
+                Thank you for booking with us!
+              </p>
+              <p style={{ fontSize: '9px', color: '#aeaeae', margin: '4px 0 0 0', fontFamily: 'sans-serif' }}>
+                Please present this receipt upon arrival.
+              </p>
             </div>
 
             {stage === 'complete' && (
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full mt-4 py-2 bg-neutral-900 text-white font-semibold rounded hover:bg-neutral-800 transition-colors shadow font-sans text-xs"
+                style={doneButtonStyle}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#2c2c2e'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#1c1c1e'}
               >
                 Done
               </button>
