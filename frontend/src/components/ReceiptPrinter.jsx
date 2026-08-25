@@ -63,7 +63,7 @@ export function ReceiptPrinter({ stage, screenTitle, screenSubtitle, children })
     borderRadius: '8px',
     padding: '4px',
     overflow: 'hidden',
-    height: '350px',
+    height: '390px',
     display: 'flex',
     alignItems: 'flex-end',
     boxSizing: 'border-box'

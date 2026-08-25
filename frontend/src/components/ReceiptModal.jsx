@@ -113,8 +113,8 @@ export function ReceiptModal({ isOpen, onClose, mode, data }) {
   const detailsListStyle = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
-    padding: '12px 0',
+    gap: '6px',
+    padding: '8px 0',
     borderBottom: '1px dashed #d1d1d6'
   };
 
@@ -286,7 +286,9 @@ export function ReceiptModal({ isOpen, onClose, mode, data }) {
                   {data.serviceType === 'dine-in' && (
                     <div style={detailRowStyle}>
                       <span style={detailLabelStyle}>TABLE NO:</span>
-                      <span style={detailValueStyle}>Table #{data.tableNo}</span>
+                      <span style={detailValueStyle}>
+                        {String(data.tableNo).startsWith('Table') ? data.tableNo : `Table #${data.tableNo}`}
+                      </span>
                     </div>
                   )}
                   <div style={detailRowStyle}>
