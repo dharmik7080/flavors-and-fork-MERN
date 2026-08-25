@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 dotenv.config();
 import cors from 'cors';
@@ -105,10 +107,48 @@ app.get('/api/status', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
 
-// Environment credentials and reservations updated successfully
+io.on('connection', (socket) => {
+  console.log(`[SOCKET CONNECTED] Client ID: ${socket.id}`);
+
+  // Admin room joining handler
+  socket.on('join-admin-room', () => {
+    socket.join('admin-room');
+    console.log(`[SOCKET] Socket ${socket.id} joined 'admin-room'`);
+  });
+
+  // Table Lock Acquired event handler
+  socket.on('table-lock-acquired', (data) => {
+    socket.broadcast.emit('table-lock-updated', data);
+    console.log(`[SOCKET BROADCAST] table-lock-updated broadcasted:`, data);
+  });
+
+  // Table Lock Released event handler
+  socket.on('table-lock-released', (data) => {
+    io.emit('table-lock-cleared', data);
+    console.log(`[SOCKET BROADCAST] table-lock-cleared broadcasted:`, data);
+  });
+
+  // New Order Placed event handler
+  socket.on('new-order-placed', (orderData) => {
+    io.to('admin-room').emit('order-received', orderData);
+    console.log(`[SOCKET BROADCAST] order-received emitted to admin-room:`, orderData);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`[SOCKET DISCONNECTED] Client ID: ${socket.id}`);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 

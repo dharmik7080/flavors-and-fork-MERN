@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import FloorMap from '../components/FloorMap.jsx';
 import { ReceiptModal } from '../components/ReceiptModal.jsx';
+import { socket } from '../utils/socket.js';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
@@ -127,7 +128,33 @@ function Reservation({ triggerToast }) {
     const interval = setInterval(fetchActiveLocks, 3000);
     return () => clearInterval(interval);
   }, [fetchActiveLocks]);
+  // Live WebSocket subscriptions for instant table lock/release updates without waiting for next poll
+  useEffect(() => {
+    const handleLockUpdated = (lockData) => {
+      console.log('[SOCKET EVENT] table-lock-updated received:', lockData);
+      if (lockData.date === formData.date && lockData.timeSlot === formData.timeSlot) {
+        setActiveLocks(prev => {
+          const filtered = prev.filter(l => Number(l.tableNo) !== Number(lockData.tableNo));
+          return [...filtered, lockData];
+        });
+      }
+    };
 
+    const handleLockCleared = (lockData) => {
+      console.log('[SOCKET EVENT] table-lock-cleared received:', lockData);
+      if (lockData.date === formData.date && lockData.timeSlot === formData.timeSlot) {
+        setActiveLocks(prev => prev.filter(l => Number(l.tableNo) !== Number(lockData.tableNo)));
+      }
+    };
+
+    socket.on('table-lock-updated', handleLockUpdated);
+    socket.on('table-lock-cleared', handleLockCleared);
+
+    return () => {
+      socket.off('table-lock-updated', handleLockUpdated);
+      socket.off('table-lock-cleared', handleLockCleared);
+    };
+  }, [formData.date, formData.timeSlot]);
   // Helper to get user ID reliably from context or localStorage fallback — always returns a plain string
   const getUserId = () => {
     const fromContext = user && (user._id || user.id);
@@ -238,6 +265,12 @@ function Reservation({ triggerToast }) {
               timeSlot: formData.timeSlot,
               userId
             });
+            // Emit live lock release to other users
+            socket.emit('table-lock-released', {
+              tableNo: tableId,
+              date: formData.date,
+              timeSlot: formData.timeSlot
+            });
           } catch (err) {
             console.warn('Failed to release lock:', err.message);
           }
@@ -253,6 +286,14 @@ function Reservation({ triggerToast }) {
           date: formData.date,
           timeSlot: formData.timeSlot,
           userId
+        });
+
+        // Emit live lock acquisition to other users
+        socket.emit('table-lock-acquired', {
+          tableNo: tableId,
+          date: formData.date,
+          timeSlot: formData.timeSlot,
+          lockedBy: userId
         });
 
         setSelectedTable(tableId);
@@ -433,6 +474,12 @@ function Reservation({ triggerToast }) {
               date: formData.date,
               timeSlot: formData.timeSlot,
               userId: getUserId()
+            });
+            // Emit socket event to notify other clients
+            socket.emit('table-lock-released', {
+              tableNo: selectedTable,
+              date: formData.date,
+              timeSlot: formData.timeSlot
             });
           } catch (releaseErr) {
             console.warn('Failed to release lock on booking checkout success:', releaseErr.message);

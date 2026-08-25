@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import MenuSkeleton from '../components/MenuSkeleton.jsx';
 import { ReceiptModal } from '../components/ReceiptModal.jsx';
+import { socket } from '../utils/socket.js';
 
 // Static menu data fallback (exact 15 items from menu.json)
 const localMenuData = [
@@ -419,6 +420,8 @@ function Menu({ triggerToast }) {
   const handleOrderCompleted = (orderObject) => {
     setReceiptModalData(orderObject);
     setIsReceiptModalOpen(true);
+    // Emit real-time notification to the kitchen socket room
+    socket.emit('new-order-placed', orderObject);
   };
 
   const handleCloseReceiptModal = () => {

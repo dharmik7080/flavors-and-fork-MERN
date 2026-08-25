@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { socket } from '../utils/socket.js';
 
 function KitchenOrderCard({ order, handleStatusUpdate, handlePrintKOT, getStatusBadgeClass }) {
   const [elapsedTime, setElapsedTime] = useState("");
@@ -126,82 +127,56 @@ function KitchenOrders() {
   const [successMsg, setSuccessMsg] = useState('');
   const [activeNotification, setActiveNotification] = useState(null);
 
-  const prevLength = useRef(null);
+  // Play synthesized sharp crystal service bell chime on new orders
+  const playChime = (order) => {
+    const targetOrderId = order?.orderId || (order?._id ? `ORD-${order._id.slice(-4).toUpperCase()}` : "New Order");
+    setActiveNotification(targetOrderId);
+    setTimeout(() => {
+      setActiveNotification(null);
+    }, 5000);
 
-  // Fetch active incoming orders
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1567.98, ctx.currentTime); // High G6 strike
+      
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(2093.00, ctx.currentTime); // High C7 resonance ring
+
+      gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2); // Fades out over 1.2s
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      
+      osc1.stop(ctx.currentTime + 1.2);
+      osc2.stop(ctx.currentTime + 1.2);
+      console.log("🔊 Synthesized service bell chime rang!");
+    } catch (err) {
+      console.error("❌ Audio synthesis failed:", err);
+    }
+  };
+
+  // Fetch active incoming orders from DB
   const fetchOrders = async (showLoader = false) => {
     try {
       if (showLoader) setLoading(true);
       const response = await axios.get('/api/orders');
       const data = response.data || [];
-
-      // Check if data length has increased and play chime with debug logs
-      const incomingLength = data.length;
-      console.log("--- Kitchen Orders Audio Notification Debug ---");
-      console.log("Previous Length Ref:", prevLength.current);
-      console.log("Incoming Data Length:", incomingLength);
-
-      if (prevLength.current !== null && incomingLength > prevLength.current) {
-        console.log("🚀 Condition MET! Ringing service bell chime...");
-
-        // Grab the newest order ID
-        const newestOrder = data[incomingLength - 1];
-        // Target our customized display orderId string property (matching the client's format)
-        const targetOrderId = newestOrder?.orderId || (newestOrder?._id ? `ORD-${newestOrder._id.slice(-4).toUpperCase()}` : "New Order");
-
-        // Trigger visual notification
-        setActiveNotification(targetOrderId);
-        setTimeout(() => {
-          setActiveNotification(null);
-        }, 5000);
-
-        try {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          const ctx = new AudioContext();
-
-          // Automatically wake up the audio context if Chrome suspended it
-          if (ctx.state === 'suspended') {
-            ctx.resume();
-          }
-
-          // Create primary sharp strike and a secondary resonant overtone
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gainNode = ctx.createGain();
-
-          // High-pitched crystal bell frequencies (Tuned to high G and C notes)
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(1567.98, ctx.currentTime); // High G6 strike
-          
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(2093.00, ctx.currentTime); // High C7 resonance ring
-
-          // Bell volume envelope: Instant sharp strike, long beautiful decay tail
-          gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2); // Fades out over 1.2 seconds
-
-          // Connect everything to your MacBook speakers
-          osc1.connect(gainNode);
-          osc2.connect(gainNode);
-          gainNode.connect(ctx.destination);
-
-          // Start both wave frequencies together
-          osc1.start();
-          osc2.start();
-          
-          // Stop playing after the decay ends
-          osc1.stop(ctx.currentTime + 1.2);
-          osc2.stop(ctx.currentTime + 1.2);
-
-          console.log("🔊 Bell chime rang successfully!");
-        } catch (err) {
-          console.error("❌ Audio synthesis failed:", err);
-        }
-      } else {
-        console.log("🛑 Condition NOT met.");
-      }
-      prevLength.current = incomingLength;
-
       setOrders(data);
       setErrorMsg('');
     } catch (err) {
@@ -212,16 +187,41 @@ function KitchenOrders() {
     }
   };
 
+  // Subscribe to real-time order-received event via socket.io
   useEffect(() => {
-    // Initial load with spinner
     fetchOrders(true);
 
-    // Set up polling interval to check for new incoming checkouts every 10 seconds
+    // Join admin-room for real-time kitchen push alerts
+    socket.emit('join-admin-room');
+
+    const handleOrderReceived = (newOrder) => {
+      console.log('[SOCKET EVENT] order-received:', newOrder);
+      playChime(newOrder);
+      setOrders(prev => {
+        const exists = prev.some(o => o._id === newOrder._id);
+        if (exists) return prev;
+        return [newOrder, ...prev]; // Place newest orders at the top
+      });
+    };
+
+    socket.on('order-received', handleOrderReceived);
+
+    // Reconnection handling to ensure room is rejoined if network dropouts occur
+    const handleConnect = () => {
+      socket.emit('join-admin-room');
+    };
+    socket.on('connect', handleConnect);
+
+    // Fallback background polling every 30 seconds to sync queue state
     const interval = setInterval(() => {
       fetchOrders(false);
-    }, 10000);
+    }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      socket.off('order-received', handleOrderReceived);
+      socket.off('connect', handleConnect);
+      clearInterval(interval);
+    };
   }, []);
 
   // Update order status lifecycle
