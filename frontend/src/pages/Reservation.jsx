@@ -4,6 +4,7 @@ import { CartContext } from '../context/CartContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import FloorMap from '../components/FloorMap.jsx';
+import { BookingSuccessModal } from '../components/BookingSuccessModal.jsx';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
@@ -34,6 +35,8 @@ function Reservation({ triggerToast }) {
   const [suggestedTable, setSuggestedTable] = useState('');
   const [inspectTable, setInspectTable] = useState(null);
   const [activeLocks, setActiveLocks] = useState([]);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successModalData, setSuccessModalData] = useState(null);
 
   // Table metadata for the Inspect Modal
   const TABLE_DETAILS = {
@@ -401,7 +404,15 @@ function Reservation({ triggerToast }) {
           // Update local bookedTables state
           setBookedTables((prev) => [...prev, selectedTable]);
 
-          // Trigger Confirmed Summary view
+          // Trigger Confirmed Summary view and success modal
+          const confirmedData = {
+            name: formData.name,
+            tableId: selectedTable,
+            date: formData.date,
+            timeSlot: formData.timeSlot,
+            guestCount: formData.guestCount
+          };
+
           setBookingConfirmed({
             name: formData.name,
             table: selectedTable,
@@ -409,6 +420,9 @@ function Reservation({ triggerToast }) {
             timeSlot: formData.timeSlot,
             guests: formData.guestCount
           });
+
+          setSuccessModalData(confirmedData);
+          setIsSuccessModalOpen(true);
 
           triggerToast(`Table #${response.data.tableId} successfully reserved live!`);
           
@@ -704,6 +718,11 @@ function Reservation({ triggerToast }) {
         );
       })()}
 
+      <BookingSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        reservationData={successModalData}
+      />
     </div>
   );
 }
