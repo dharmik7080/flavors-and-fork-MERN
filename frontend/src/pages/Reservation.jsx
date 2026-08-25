@@ -4,7 +4,7 @@ import { CartContext } from '../context/CartContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import FloorMap from '../components/FloorMap.jsx';
-import { BookingSuccessModal } from '../components/BookingSuccessModal.jsx';
+import { ReceiptModal } from '../components/ReceiptModal.jsx';
 
 function Reservation({ triggerToast }) {
   const { cart, clearCart } = useContext(CartContext);
@@ -718,10 +718,11 @@ function Reservation({ triggerToast }) {
         );
       })()}
 
-      <BookingSuccessModal
+      <ReceiptModal
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
-        reservationData={successModalData}
+        mode="reservation"
+        data={successModalData}
       />
     </div>
   );

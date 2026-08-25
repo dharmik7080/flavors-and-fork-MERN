@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, CircleNotch } from '@phosphor-icons/react';
 import { cn } from '../utils/cn';
 
-export function ReceiptPrinter({ stage, children }) {
+export function ReceiptPrinter({ stage, screenTitle, screenSubtitle, children }) {
   const printerStyle = {
     width: '100%',
     maxWidth: '360px',
@@ -99,17 +99,24 @@ export function ReceiptPrinter({ stage, children }) {
     height: '100%'
   };
 
+  const displayTitle = screenTitle || (
+    stage === 'processing' ? 'Processing Booking...' :
+    stage === 'printing' ? 'Printing Receipt...' :
+    'Transaction Complete'
+  );
+
   return (
     <div style={printerStyle}>
       {/* LED Status Bar / Screen Display */}
       <div style={screenStyle}>
         <div style={screenTextStyle}>
           <span style={statusLabelStyle}>Terminal Status</span>
-          <span style={statusValueStyle}>
-            {stage === 'processing' && 'Processing Booking...'}
-            {stage === 'printing' && 'Printing Receipt...'}
-            {stage === 'complete' && 'Transaction Complete'}
-          </span>
+          <span style={statusValueStyle}>{displayTitle}</span>
+          {screenSubtitle && (
+            <span style={{ fontSize: '10px', color: '#ffc107', fontFamily: 'monospace', marginTop: '2px' }}>
+              {screenSubtitle}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {(stage === 'processing' || stage === 'printing') && (

@@ -4,6 +4,7 @@ import { CartContext } from '../context/CartContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import MenuSkeleton from '../components/MenuSkeleton.jsx';
+import { ReceiptModal } from '../components/ReceiptModal.jsx';
 
 // Static menu data fallback (exact 15 items from menu.json)
 const localMenuData = [
@@ -248,6 +249,9 @@ function Menu({ triggerToast }) {
   const { user, requireAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receiptModalData, setReceiptModalData] = useState(null);
+
   const handleAddToCartSecure = (dish) => {
     requireAuth(
       () => {
@@ -412,6 +416,26 @@ function Menu({ triggerToast }) {
     setDiscount(0);
   };
 
+  const handleOrderCompleted = (orderObject) => {
+    setReceiptModalData(orderObject);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleCloseReceiptModal = () => {
+    setIsReceiptModalOpen(false);
+    clearCart();
+    setPromoInput('');
+    setDiscountPercent(0);
+    setAppliedPromo(null);
+    setPromoError('');
+    setPromoSuccess('');
+    setPaymentMethod('');
+    setShowPaymentModal(false);
+    setShowCartDrawer(false);
+    // Redirect to home/menu or custom orders listing page
+    navigate('/');
+  };
+
   const handleMockRazorpaySuccess = (orderData) => {
     setShowMockRazorpayModal(false);
     setIsProcessingPayment(true);
@@ -436,16 +460,13 @@ function Menu({ triggerToast }) {
       }
       triggerToast(successMsg);
 
-      // Reset states
-      clearCart();
-      setPromoInput('');
-      setDiscountPercent(0);
-      setAppliedPromo(null);
-      setPromoError('');
-      setPromoSuccess('');
-      setPaymentMethod('');
-      setShowPaymentModal(false);
-      setShowCartDrawer(false);
+      const orderDetails = res.data.order || {
+        items: cart,
+        grandTotal: toPay,
+        serviceType: serviceType,
+        tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A'
+      };
+      handleOrderCompleted(orderDetails);
     })
     .catch((err) => {
       console.error('Mock Checkout error:', err);
@@ -481,16 +502,13 @@ function Menu({ triggerToast }) {
           }
           triggerToast(successMsg);
 
-          // Reset cart and states
-          clearCart();
-          setPromoInput('');
-          setDiscountPercent(0);
-          setAppliedPromo(null);
-          setPromoError('');
-          setPromoSuccess('');
-          setPaymentMethod('');
-          setShowPaymentModal(false);
-          setShowCartDrawer(false);
+          const orderDetails = res.data.order || {
+            items: cart,
+            grandTotal: toPay,
+            serviceType: serviceType,
+            tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A'
+          };
+          handleOrderCompleted(orderDetails);
         })
         .catch((err) => {
           console.error('Checkout API error:', err);
@@ -557,16 +575,13 @@ function Menu({ triggerToast }) {
                 }
                 triggerToast(successMsg);
 
-                // Reset states
-                clearCart();
-                setPromoInput('');
-                setDiscountPercent(0);
-                setAppliedPromo(null);
-                setPromoError('');
-                setPromoSuccess('');
-                setPaymentMethod('');
-                setShowPaymentModal(false);
-                setShowCartDrawer(false);
+                const orderDetails = checkoutRes.data.order || {
+                  items: cart,
+                  grandTotal: toPay,
+                  serviceType: serviceType,
+                  tableNo: serviceType === 'dine-in' ? selectedTable : 'N/A'
+                };
+                handleOrderCompleted(orderDetails);
               } else {
                 alert('Payment verification failed on server.');
               }
@@ -1163,6 +1178,12 @@ function Menu({ triggerToast }) {
           </div>
         </div>
       )}
+      <ReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={handleCloseReceiptModal}
+        mode="order"
+        data={receiptModalData}
+      />
     </div>
   );
 }
